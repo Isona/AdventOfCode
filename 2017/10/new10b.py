@@ -1,9 +1,9 @@
 with open("10input.txt", "r") as file:
-    data = file.readline().rstrip().split(",")
+    data = file.readline()
     print(data)
     lengths = []
     for i in range(0, len(data)):
-        lengths.append(int(data[i]))
+        lengths.append(ord(data[i]))
     print(lengths)
 
     lengths.extend([17, 31, 73, 47, 23])
@@ -36,7 +36,7 @@ with open("10input.txt", "r") as file:
         for j in range(0, 16):
             denseHash[i] ^= knots[16*i + j]
         #denseString += format(denseHash[i], 'x')
-        denseString += hex(denseHash[i])[2:] + ""
+        denseString += hex(denseHash[i])[2:].zfill(2)
 
     print(denseHash)
     print(len(denseString))
