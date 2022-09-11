@@ -1,19 +1,33 @@
+use std::i32::MAX;
+
 use ndarray::Array2;
 
 const INPUT: &str = include_str!("input.txt");
 
 fn main() {
-    let (calls, boards) = parse_input(INPUT);
+    let (calls, mut boards) = parse_input(INPUT);
 
-    let part_1_answer = part_1(&calls, &boards);
+    let part_1_answer = part_1(&calls, &mut boards);
     println!("{part_1_answer}");
 
     let part_2_answer = part_2(&calls, &boards);
     println!("{part_2_answer}");
 }
 
-fn part_1(calls: &[i32], boards: &Vec<BingoBoard>) -> i32 {
-    0
+fn part_1(calls: &[i32], boards: &mut Vec<BingoBoard>) -> i32 {
+    let mut fastest_win = MAX;
+    let mut score = 0;
+    for board in boards {
+        if let Some(winning_turn) = board.get_winning_turn(&calls) {
+            dbg!(&winning_turn);
+            if winning_turn < fastest_win {
+                fastest_win = winning_turn;
+                score = board.get_score(&calls, winning_turn);
+            }
+        }
+    }
+
+    score
 }
 
 fn part_2(calls: &[i32], boards: &Vec<BingoBoard>) -> i32 {
@@ -31,22 +45,20 @@ fn parse_input(input: &str) -> (Vec<i32>, Vec<BingoBoard>) {
         .collect();
 
     let mut boards: Vec<BingoBoard> = Vec::new();
-    dbg!(&calls);
     while input.peek().is_some() {
         // Discard empty line
         input.next();
-        let mut raw_board: Vec<i32> = Vec::new();
+        let mut raw_board: Vec<(i32, bool)> = Vec::new();
         for _ in 0..5 {
-            let mut board_line: Vec<i32> = input
+            let mut board_line: Vec<(i32, bool)> = input
                 .next()
                 .unwrap()
                 .split_whitespace()
-                .map(|x| x.parse().unwrap())
+                .map(|x| (x.parse().unwrap(), false))
                 .collect();
             raw_board.append(&mut board_line);
         }
-        let board: Array2<i32> = Array2::from_shape_vec((5, 5), raw_board).unwrap();
-        dbg!(&board);
+        let board: Array2<(i32, bool)> = Array2::from_shape_vec((5, 5), raw_board).unwrap();
         boards.push(BingoBoard { board });
     }
     //input.lines().map(|x| x.parse::<i32>().unwrap()).collect()
@@ -55,7 +67,52 @@ fn parse_input(input: &str) -> (Vec<i32>, Vec<BingoBoard>) {
 
 #[derive(Debug)]
 struct BingoBoard {
-    board: Array2<i32>,
+    board: Array2<(i32, bool)>,
+}
+
+impl BingoBoard {
+    fn get_winning_turn(&mut self, calls: &[i32]) -> Option<i32> {
+        for i in 0..calls.len() {
+            for item in self.board.iter_mut() {
+                if calls[i] == item.0 {
+                    item.1 = true;
+                    break;
+                }
+            }
+            if self.has_won() {
+                return Some(i.try_into().unwrap());
+            }
+        }
+
+        None
+    }
+
+    fn has_won(&self) -> bool {
+        for row in self.board.rows() {
+            if !row.iter().any(|x| x.1 == false) {
+                return true;
+            }
+        }
+
+        for column in self.board.columns() {
+            if !column.iter().any(|x| x.1 == false) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    fn get_score(&self, calls: &[i32], winning_turn: i32) -> i32 {
+        let mut sum = 0;
+        for item in self.board.iter() {
+            if !item.1 {
+                sum += item.0;
+            }
+        }
+
+        sum * calls[winning_turn as usize]
+    }
 }
 
 #[cfg(test)]
@@ -83,9 +140,8 @@ mod tests {
 
     #[test]
     fn part_1_test() {
-        let input = parse_input(TESTINPUT);
-        panic!();
-        //assert_eq!(part_1(&input), 7);
+        let (calls, mut boards) = parse_input(TESTINPUT);
+        assert_eq!(part_1(&calls, &mut boards), 4512);
     }
 
     #[test]
