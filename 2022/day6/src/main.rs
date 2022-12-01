@@ -21,7 +21,7 @@ fn parse_input(input: &str) -> Vec<i32> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    const TESTINPUT: &str = "";
+    const TESTINPUT: &str = include_str!("testinput.txt");;
 
     #[test]
     fn part_1_test() {
