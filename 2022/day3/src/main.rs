@@ -15,20 +15,21 @@ fn main() {
 fn part_1(backpacks: &Vec<Backpack>) -> i32 {
     let mut priority_sum = 0;
 
-    for (backpack) in backpacks {
+    for backpack in backpacks {
         priority_sum += get_item_value(backpack.get_intersection());
-    } 
-    
+    }
+
     priority_sum
 }
 
 fn part_2(backpacks: &Vec<Backpack>) -> i32 {
     let mut badge_sum = 0;
 
-    let backpack_iter = backpacks.iter();
+    //let mut backpack_iter = backpacks.chunks(3);
 
-    for backpack in backpack_iter {
-        badge_sum += get_item_value(backpack.get_security_badge(backpack_iter.next().unwrap(), backpack_iter.next().unwrap()))
+    for security_group in backpacks.chunks_exact(3) {
+        let [backpack, backpack2, backpack3] = security_group else {panic!()};
+        badge_sum += get_item_value(backpack.get_security_badge(&backpack2, &backpack3));
     }
 
     badge_sum
@@ -37,8 +38,7 @@ fn part_2(backpacks: &Vec<Backpack>) -> i32 {
 fn get_item_value(input: char) -> i32 {
     if input.is_lowercase() {
         input as i32 - 96
-    }
-    else {
+    } else {
         input as i32 - 38
     }
 }
@@ -53,18 +53,27 @@ impl Backpack {
     fn get_backpack(input: &str) -> Backpack {
         Backpack {
             all_items: input.chars().collect(),
-            first_compartment: input[0..input.len()/2].chars().collect(),
-            second_compartment: input[input.len()/2..input.len()].chars().collect()
+            first_compartment: input[0..input.len() / 2].chars().collect(),
+            second_compartment: input[input.len() / 2..input.len()].chars().collect(),
         }
     }
 
     fn get_intersection(&self) -> char {
-        return self.first_compartment.intersection(&self.second_compartment).next().unwrap().clone()
+        return self
+            .first_compartment
+            .intersection(&self.second_compartment)
+            .next()
+            .unwrap()
+            .clone();
     }
 
     fn get_security_badge(&self, second_elf: &Backpack, third_elf: &Backpack) -> char {
-        let first_interscetion: HashSet<&char> = self.all_items.intersection(&second_elf.all_items).collect();
-        first_interscetion.intersection(third_elf.all_items).next().unwrap().clone().to_owned()
+        let mut first_intersection = self.all_items.intersection(&second_elf.all_items);
+
+        first_intersection
+            .find(|x| third_elf.all_items.contains(x))
+            .unwrap()
+            .clone()
     }
 }
 
@@ -86,6 +95,6 @@ mod tests {
     #[test]
     fn part_2_test() {
         let input = parse_input(TESTINPUT);
-        assert_eq!(part_2(&input), 5);
+        assert_eq!(part_2(&input), 70);
     }
 }
