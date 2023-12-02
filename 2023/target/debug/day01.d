@@ -1,1 +1,0 @@
-C:\Users\isabelwh\Documents\learning\AdventOfCode\2023\target\debug\day01.exe: C:\Users\isabelwh\Documents\learning\AdventOfCode\2023\day01\src\input.txt C:\Users\isabelwh\Documents\learning\AdventOfCode\2023\day01\src\main.rs
