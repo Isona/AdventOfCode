@@ -26,19 +26,16 @@ fn part_1_and_2(input: &Vec<Vec<char>>) -> (u32, u32) {
             if input[x][y].is_digit(10) {
                 part_number.push(input[x][y]);
 
-                let isize_x = x as isize;
-                let isize_y = y as isize;
-                for neighbour_x in isize_x - 1..isize_x + 2 {
-                    for neighbour_y in isize_y - 1..isize_y + 2 {
-                        if let Some(row) = input.get(neighbour_x as usize)
-                            && let Some(neighbour) = row.get(neighbour_y as usize)
+                for neighbour_x in x.saturating_sub(1)..=x + 1 {
+                    for neighbour_y in y.saturating_sub(1)..=y + 1 {
+                        if let Some(row) = input.get(neighbour_x)
+                            && let Some(neighbour) = row.get(neighbour_y)
                         {
                             if is_symbol(neighbour) {
                                 symbol_adjacent = true;
 
                                 if neighbour == &'*' {
-                                    gear_coords
-                                        .insert((neighbour_x as usize, neighbour_y as usize));
+                                    gear_coords.insert((neighbour_x, neighbour_y));
                                 }
                             }
                         }
