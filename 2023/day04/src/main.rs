@@ -1,4 +1,4 @@
-use std::collections::{HashSet, VecDeque};
+use std::collections::{HashMap, HashSet};
 
 const INPUT: &str = include_str!("input.txt");
 
@@ -6,13 +6,14 @@ fn main() {
     let input = parse_input(INPUT);
 
     let part_1_answer = part_1(&input);
-    println!("{part_1_answer}");
+    println!("Part 1: {part_1_answer}");
 
     let part_2_answer = part_2(&input);
-    println!("{part_2_answer}");
+    println!("Part 2: {part_2_answer}");
 }
 
-fn part_1(input: &Vec<Scratchcard>) -> u32 {
+fn part_1(input: &[Scratchcard]) -> u32 {
+    // Loop over the scratchcards and add the scores
     let mut part1_output = 0;
     for card in input {
         part1_output += card.get_card_score();
@@ -21,25 +22,31 @@ fn part_1(input: &Vec<Scratchcard>) -> u32 {
     part1_output
 }
 
-fn part_2(input: &Vec<Scratchcard>) -> i32 {
+fn part_2(input: &[Scratchcard]) -> usize {
+    // Number of cards for output
     let mut card_count = 0;
 
-    let mut won_cards = VecDeque::from_iter(1..=input.len());
+    // Hashmap to store how many copies of each card we have
+    // Initialise with 1 of each card index in the input vector
+    let won_cards = (1..=input.len()).map(|x| (x, 1));
+    let mut won_cards: HashMap<usize, usize> = HashMap::from_iter(won_cards);
 
-    while let Some(current_card_number) = won_cards.pop_front() {
-        // Continue if the card isn't not in the vector
-        if current_card_number > input.len() {
-            continue;
-        }
+    // Loop over each card
+    for current_card_number in 1..=input.len() {
+        // Calculate the number of copies we have and add to the output value
+        let card_copies = *won_cards.get(&current_card_number).unwrap();
+        card_count += card_copies;
 
+        // Get the current card and how many matches
         let current_card = &input[current_card_number - 1];
         let won_card_count = current_card.get_match_count();
 
-        won_cards.append(&mut VecDeque::from_iter(
-            current_card_number + 1..=current_card_number + won_card_count,
-        ));
-
-        card_count += 1;
+        // Iterate over won card numbers, adding the appropriate number of copies to the hashmap
+        for won_card_number in current_card_number + 1..=current_card_number + won_card_count {
+            if let Some(won_card_copies) = won_cards.get(&won_card_number) {
+                won_cards.insert(won_card_number, won_card_copies + card_copies);
+            }
+        }
     }
 
     card_count
@@ -47,7 +54,6 @@ fn part_2(input: &Vec<Scratchcard>) -> i32 {
 
 #[derive(Default, Debug)]
 struct Scratchcard {
-    card_number: u32,
     winning_numbers: HashSet<u32>,
     card_numbers: Vec<u32>,
 }
@@ -55,21 +61,17 @@ struct Scratchcard {
 impl Scratchcard {
     pub fn get_scratchcard(input: &str) -> Scratchcard {
         let mut scratchcard = Scratchcard::default();
-        // Split around ": "
+
+        // Split into 3 around the card definition, the winning numbers and card numbers
         let card_parts: Vec<&str> = input.split(&[':', '|']).collect();
 
-        scratchcard.card_number = card_parts[0]
-            .split(' ')
-            .last()
-            .unwrap()
-            .parse::<u32>()
-            .unwrap();
-
+        // Get the winning numbers from the second part
         scratchcard.winning_numbers = card_parts[1]
             .split(' ')
             .filter_map(|x| x.parse::<u32>().ok())
             .collect();
 
+        // Get the card numbers from the third part
         scratchcard.card_numbers = card_parts[2]
             .split(' ')
             .filter_map(|x| x.parse::<u32>().ok())
@@ -78,44 +80,33 @@ impl Scratchcard {
         scratchcard
     }
 
+    // Get the score for the card for part 1
     pub fn get_card_score(&self) -> u32 {
-        let mut score = 0;
+        let matches: u32 = self.get_match_count().try_into().unwrap();
 
-        for card_number in &self.card_numbers {
-            if self.winning_numbers.contains(&card_number) {
-                score = Self::calculate_score(score);
-            }
+        if matches == 0 {
+            0
+        } else {
+            2_u32.pow(matches - 1)
         }
-
-        score
     }
 
+    // Get the number of card numbers matches
     pub fn get_match_count(&self) -> usize {
         let mut match_count = 0;
 
         for card_number in &self.card_numbers {
-            if self.winning_numbers.contains(&card_number) {
+            if self.winning_numbers.contains(card_number) {
                 match_count += 1;
             }
         }
 
         match_count
     }
-
-    fn calculate_score(score: u32) -> u32 {
-        if score == 0 {
-            1
-        } else {
-            score * 2
-        }
-    }
 }
 
 fn parse_input(input: &str) -> Vec<Scratchcard> {
-    input
-        .lines()
-        .map(|x| Scratchcard::get_scratchcard(x))
-        .collect()
+    input.lines().map(Scratchcard::get_scratchcard).collect()
 }
 
 #[cfg(test)]
