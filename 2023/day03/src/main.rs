@@ -1,5 +1,6 @@
 #![feature(let_chains)]
 
+use grid::*;
 use std::collections::{HashMap, HashSet};
 
 const INPUT: &str = include_str!("input.txt");
@@ -12,7 +13,7 @@ fn main() {
     println!("Part 2: {part_2_answer}");
 }
 
-fn part_1_and_2(input: &[Vec<char>]) -> (u32, u32) {
+fn part_1_and_2(input: &Grid<char>) -> (u32, u32) {
     let mut part_1_out = 0;
     let mut part_2_out = 0;
 
@@ -22,45 +23,50 @@ fn part_1_and_2(input: &[Vec<char>]) -> (u32, u32) {
     let mut symbol_adjacent = false;
     let mut gear_coords: HashSet<(usize, usize)> = HashSet::new();
 
-    for x in 0..input.len() {
-        for y in 0..input[0].len() {
-            if input[x][y].is_ascii_digit() {
-                part_number.push(input[x][y]);
+    for ((x, y), value) in input.indexed_iter() {
+        if value.is_ascii_digit() {
+            part_number.push(*value);
 
-                let neighbours = get_neighbour_coords(x, y);
+            let neighbours = get_neighbour_coords(x, y);
 
-                for neighbour_coord in neighbours {
-                    if let Some(neighbour) = get_grid_value(input, &neighbour_coord)
-                        && is_symbol(&neighbour)
-                    {
-                        symbol_adjacent = true;
+            for (neighbour_x, neighbour_y) in neighbours {
+                if let Some(neighbour) = input.get(neighbour_x, neighbour_y)
+                    && is_symbol(neighbour)
+                {
+                    symbol_adjacent = true;
 
-                        if neighbour == '*' {
-                            gear_coords.insert(neighbour_coord);
-                        }
+                    if neighbour == &'*' {
+                        gear_coords.insert((neighbour_x, neighbour_y));
+                    }
+                }
+            }
+
+            // If the neighbour to the right either doesn't exist or isn't a number
+            // We need to do calculations for both parts and cleanup
+
+            let right_neighbour = input.get(x, y + 1);
+
+            if right_neighbour.is_none() || !right_neighbour.unwrap().is_alphanumeric() {
+                // If the part is next to a symbol, parse and add to the part 1 total
+                if !part_number.is_empty() && symbol_adjacent {
+                    part_1_out += part_number.parse::<u32>().unwrap();
+                }
+
+                // For every adjacent gear, if it's in the hashmap then add to the sum
+                // Or add the newly found gear to the map
+                for &coord in &gear_coords {
+                    let part_num_u32 = part_number.parse::<u32>().unwrap();
+                    if let Some(other_part_num) = gear_map.get(&coord) {
+                        part_2_out += part_num_u32 * other_part_num;
+                    } else {
+                        gear_map.insert(coord, part_num_u32);
                     }
                 }
 
-                // If the neighbour to the right either doesn't exist or isn't a number
-                let right_neighbour = get_grid_value(&input, &(x, y + 1));
-
-                if right_neighbour.is_none() || !right_neighbour.unwrap().is_alphanumeric() {
-                    if !part_number.is_empty() && symbol_adjacent {
-                        part_1_out += part_number.parse::<u32>().unwrap();
-                    }
-
-                    for &coord in &gear_coords {
-                        let part_num_u32 = part_number.parse::<u32>().unwrap();
-                        if let Some(other_part_num) = gear_map.get(&coord) {
-                            part_2_out += part_num_u32 * other_part_num;
-                        } else {
-                            gear_map.insert(coord, part_num_u32);
-                        }
-                    }
-                    part_number.clear();
-                    symbol_adjacent = false;
-                    gear_coords.clear();
-                }
+                // Clear values ready for next part number
+                part_number.clear();
+                symbol_adjacent = false;
+                gear_coords.clear();
             }
         }
     }
@@ -68,6 +74,9 @@ fn part_1_and_2(input: &[Vec<char>]) -> (u32, u32) {
     (part_1_out, part_2_out)
 }
 
+// Get the 8 surrounding cells
+// Doesn't check if indexes are past the ends of the grid
+// Won't return negative values or the original cell
 fn get_neighbour_coords(x: usize, y: usize) -> HashSet<(usize, usize)> {
     let mut neighbours = HashSet::new();
 
@@ -83,20 +92,16 @@ fn get_neighbour_coords(x: usize, y: usize) -> HashSet<(usize, usize)> {
     neighbours
 }
 
-fn get_grid_value<T: Copy>(grid: &[Vec<T>], coord: &(usize, usize)) -> Option<T> {
-    if let Some(row) = grid.get(coord.0) {
-        row.get(coord.1).copied()
-    } else {
-        None
-    }
-}
-
 fn is_symbol(input: &char) -> bool {
     !input.is_ascii_digit() && input != &'.'
 }
 
-fn parse_input(input: &str) -> Vec<Vec<char>> {
-    input.lines().map(|x| x.chars().collect()).collect()
+fn parse_input(input: &str) -> Grid<char> {
+    let mut grid = grid![];
+    for line in input.lines() {
+        grid.push_row(line.chars().collect())
+    }
+    grid
 }
 
 #[cfg(test)]
