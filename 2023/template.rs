@@ -4,22 +4,22 @@ fn main() {
     let input = parse_input(INPUT);
 
     let part_1_answer = part_1(&input);
-    println!("{part_1_answer}");
+    println!("Part 1: {part_1_answer}");
 
     let part_2_answer = part_2(&input);
-    println!("{part_2_answer}");
+    println!("Part 2: {part_2_answer}");
 }
 
-fn part_1(input: &[i32]) -> i32 {
+fn part_1(input: &[u64]) -> u64 {
     todo!();
 }
 
-fn part_2(input: &[i32]) -> i32 {
+fn part_2(input: &[u64]) -> u64 {
     todo!();
 }
 
-fn parse_input(input: &str) -> Vec<i32> {
-    input.lines().map(|x| x.parse::<i32>().unwrap()).collect()
+fn parse_input(input: &str) -> Vec<u64> {
+    input.lines().map(|x| x.parse::<u64>().unwrap()).collect()
 }
 
 #[cfg(test)]
