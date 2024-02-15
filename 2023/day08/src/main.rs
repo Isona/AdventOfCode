@@ -30,8 +30,8 @@ fn part_1(directions: &String, nodes: &HashMap<String, (String, String)>) -> usi
     steps
 }
 
-fn part_2(directions: &String, nodes: &HashMap<String, (String, String)>) -> usize {
-    let mut current_nodes: Vec<String> = nodes
+fn part_2(directions: &String, nodes: &HashMap<String, (String, String)>) -> u128 {
+    let a_nodes: Vec<String> = nodes
         .keys()
         .filter_map(|x| {
             if x.ends_with('A') {
@@ -41,26 +41,40 @@ fn part_2(directions: &String, nodes: &HashMap<String, (String, String)>) -> usi
             }
         })
         .collect();
-    let mut steps = 0;
+
     let directions: Vec<char> = directions.chars().collect();
 
-    while !check_all_z(&current_nodes) {
-        for current_node in current_nodes.iter_mut() {
-            *current_node = match directions[steps % directions.len()] {
-                'L' => nodes.get(current_node).unwrap().0.clone(),
-                'R' => nodes.get(current_node).unwrap().1.clone(),
+    println!("{:?}", a_nodes);
+
+    // Get the loop length for each node
+    let mut cycle_lengths: Vec<usize> = vec![];
+    for a_node in a_nodes {
+        let mut current_node = a_node;
+        let mut steps = 0;
+        while !current_node.ends_with('Z') {
+            match directions[steps % directions.len()] {
+                'L' => current_node = nodes.get(&current_node).unwrap().0.clone(),
+                'R' => current_node = nodes.get(&current_node).unwrap().1.clone(),
                 _ => panic!(),
             }
-        }
 
-        steps += 1
+            steps += 1;
+        }
+        cycle_lengths.push(steps);
     }
 
-    steps
-}
+    println!("{:?}", cycle_lengths);
 
-fn check_all_z(current_nodes: &Vec<String>) -> bool {
-    current_nodes.iter().all(|x| x.ends_with('Z'))
+    let mut lcm: u128 = 0;
+    for cycle in cycle_lengths {
+        if lcm == 0 {
+            lcm = cycle.try_into().unwrap();
+        } else {
+            lcm = num::integer::lcm(lcm, cycle.try_into().unwrap());
+        }
+    }
+
+    lcm
 }
 
 fn parse_input(input: &str) -> (String, HashMap<String, (String, String)>) {
@@ -92,7 +106,7 @@ mod tests {
     #[test]
     fn part_1_test() {
         let (directions, nodes) = parse_input(TESTINPUT);
-        assert_eq!(part_1(&directions, &nodes), 6);
+        assert_eq!(part_1(&directions, &nodes), 2);
     }
 
     #[test]
