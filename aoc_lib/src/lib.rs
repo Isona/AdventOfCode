@@ -138,7 +138,7 @@ impl<T> Grid<T> {
                 }
             }
             Direction::South | Direction::SouthEast | Direction::SouthWest => {
-                if location.x + 1 < self.row_len {
+                if location.y + 1 < self.row_count {
                     location.y + 1
                 } else {
                     return None;
