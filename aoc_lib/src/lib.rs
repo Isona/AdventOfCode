@@ -23,14 +23,7 @@ impl<T> Grid<T> {
     pub fn get_all_neighbour_coords(&self, location: Coordinate) -> Vec<Coordinate> {
         let mut neighbours = self.get_cardinal_neighbour_coords(location);
 
-        let intercardinals = vec![
-            Direction::NorthEast,
-            Direction::NorthWest,
-            Direction::SouthEast,
-            Direction::SouthWest,
-        ];
-
-        for direction in intercardinals {
+        for direction in Direction::get_intercardinals() {
             if let Some(neighbour) = self.get_neighbour(location, direction) {
                 neighbours.push(neighbour)
             }
@@ -41,14 +34,8 @@ impl<T> Grid<T> {
 
     pub fn get_cardinal_neighbour_coords(&self, location: Coordinate) -> Vec<Coordinate> {
         let mut neighbours = vec![];
-        let cardinals = vec![
-            Direction::North,
-            Direction::South,
-            Direction::East,
-            Direction::West,
-        ];
 
-        for direction in cardinals {
+        for direction in Direction::get_cardinals() {
             if let Some(neighbour) = self.get_neighbour(location, direction) {
                 neighbours.push(neighbour);
             }
@@ -63,14 +50,7 @@ impl<T> Grid<T> {
     ) -> Vec<(Coordinate, Direction)> {
         let mut neighbours = self.get_cardinal_neighbour_coords_with_direction(location);
 
-        let intercardinals = vec![
-            Direction::NorthEast,
-            Direction::NorthWest,
-            Direction::SouthEast,
-            Direction::SouthWest,
-        ];
-
-        for direction in intercardinals {
+        for direction in Direction::get_intercardinals() {
             if let Some(neighbour) = self.get_neighbour(location, direction) {
                 neighbours.push((neighbour, direction));
             }
@@ -84,12 +64,7 @@ impl<T> Grid<T> {
         location: Coordinate,
     ) -> Vec<(Coordinate, Direction)> {
         let mut neighbours = vec![];
-        let cardinals = vec![
-            Direction::North,
-            Direction::South,
-            Direction::East,
-            Direction::West,
-        ];
+        let cardinals = Direction::get_cardinals();
 
         for direction in cardinals {
             if let Some(neighbour) = self.get_neighbour(location, direction) {
@@ -174,7 +149,7 @@ impl<T> Grid<T> {
             }
         }
 
-        return None;
+        None
     }
 }
 
@@ -188,6 +163,52 @@ pub enum Direction {
     NorthWest,
     SouthEast,
     SouthWest,
+}
+
+impl Direction {
+    pub fn get_cardinals() -> Vec<Direction> {
+        vec![
+            Direction::North,
+            Direction::South,
+            Direction::East,
+            Direction::West,
+        ]
+    }
+
+    pub fn get_intercardinals() -> Vec<Direction> {
+        vec![
+            Direction::NorthEast,
+            Direction::NorthWest,
+            Direction::SouthEast,
+            Direction::SouthWest,
+        ]
+    }
+
+    pub fn get_all() -> Vec<Direction> {
+        vec![
+            Direction::North,
+            Direction::South,
+            Direction::East,
+            Direction::West,
+            Direction::NorthEast,
+            Direction::NorthWest,
+            Direction::SouthEast,
+            Direction::SouthWest,
+        ]
+    }
+
+    pub fn get_opposite(&self) -> Direction {
+        match self {
+            Direction::North => Direction::South,
+            Direction::South => Direction::North,
+            Direction::East => Direction::West,
+            Direction::West => Direction::East,
+            Direction::NorthEast => Direction::SouthWest,
+            Direction::NorthWest => Direction::SouthEast,
+            Direction::SouthEast => Direction::NorthWest,
+            Direction::SouthWest => Direction::NorthEast,
+        }
+    }
 }
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy, Hash)]
