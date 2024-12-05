@@ -16,65 +16,6 @@ impl<T> Grid<T> {
         }
     }
 
-    pub fn get(&self, coord: Coordinate) -> &T {
-        &self.data[coord.y * self.row_count + coord.x]
-    }
-
-    pub fn get_all_neighbour_coords(&self, location: Coordinate) -> Vec<Coordinate> {
-        let mut neighbours = self.get_cardinal_neighbour_coords(location);
-
-        for direction in Direction::get_intercardinals() {
-            if let Some(neighbour) = self.get_neighbour(location, direction) {
-                neighbours.push(neighbour)
-            }
-        }
-
-        neighbours
-    }
-
-    pub fn get_cardinal_neighbour_coords(&self, location: Coordinate) -> Vec<Coordinate> {
-        let mut neighbours = vec![];
-
-        for direction in Direction::get_cardinals() {
-            if let Some(neighbour) = self.get_neighbour(location, direction) {
-                neighbours.push(neighbour);
-            }
-        }
-
-        neighbours
-    }
-
-    pub fn get_all_neighbour_coords_with_direction(
-        &self,
-        location: Coordinate,
-    ) -> Vec<(Coordinate, Direction)> {
-        let mut neighbours = self.get_cardinal_neighbour_coords_with_direction(location);
-
-        for direction in Direction::get_intercardinals() {
-            if let Some(neighbour) = self.get_neighbour(location, direction) {
-                neighbours.push((neighbour, direction));
-            }
-        }
-
-        neighbours
-    }
-
-    pub fn get_cardinal_neighbour_coords_with_direction(
-        &self,
-        location: Coordinate,
-    ) -> Vec<(Coordinate, Direction)> {
-        let mut neighbours = vec![];
-        let cardinals = Direction::get_cardinals();
-
-        for direction in cardinals {
-            if let Some(neighbour) = self.get_neighbour(location, direction) {
-                neighbours.push((neighbour, direction));
-            }
-        }
-
-        neighbours
-    }
-
     pub fn push_row(&mut self, new_row: Vec<T>) {
         if self.data.is_empty() {
             self.row_len = new_row.len();
@@ -85,7 +26,38 @@ impl<T> Grid<T> {
         self.data.extend(new_row);
     }
 
-    pub fn get_neighbour(&self, location: Coordinate, direction: Direction) -> Option<Coordinate> {
+    pub fn get(&self, coord: Coordinate) -> &T {
+        &self.data[coord.y * self.row_count + coord.x]
+    }
+
+    pub fn get_all_neighbours(&self, location: Coordinate) -> Vec<Neighbour<T>> {
+        self.get_neighbours(&location, &Direction::get_all())
+    }
+
+    pub fn get_cardinal_neighbours(&self, location: Coordinate) -> Vec<Neighbour<T>> {
+        self.get_neighbours(&location, &Direction::get_cardinals())
+    }
+
+    pub fn get_neighbours(
+        &self,
+        location: &Coordinate,
+        directions: &[Direction],
+    ) -> Vec<Neighbour<T>> {
+        let mut neighbours = Vec::new();
+        for direction in directions {
+            if let Some(neighbour) = self.get_neighbour(location, direction) {
+                neighbours.push(neighbour);
+            }
+        }
+
+        neighbours
+    }
+
+    pub fn get_neighbour(
+        &self,
+        location: &Coordinate,
+        direction: &Direction,
+    ) -> Option<Neighbour<T>> {
         let new_x = match direction {
             Direction::East | Direction::NorthEast | Direction::SouthEast => {
                 if location.x + 1 < self.row_len {
@@ -121,8 +93,13 @@ impl<T> Grid<T> {
             }
             _ => location.y,
         };
+        let neighbour_coord = Coordinate { x: new_x, y: new_y };
 
-        Some(Coordinate { x: new_x, y: new_y })
+        Some(Neighbour {
+            value: self.get(neighbour_coord),
+            location: neighbour_coord,
+            direction: *direction,
+        })
     }
 
     pub fn is_valid_coord(&self, coord: Coordinate) -> bool {
@@ -151,6 +128,12 @@ impl<T> Grid<T> {
 
         None
     }
+}
+
+pub struct Neighbour<'a, T> {
+    pub value: &'a T,
+    pub location: Coordinate,
+    pub direction: Direction,
 }
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy, Hash)]
