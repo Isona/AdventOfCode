@@ -192,6 +192,32 @@ impl Direction {
             Direction::SouthWest => Direction::NorthEast,
         }
     }
+
+    pub fn turn_right(&self) -> Direction {
+        match self {
+            Direction::North => Direction::East,
+            Direction::South => Direction::West,
+            Direction::East => Direction::South,
+            Direction::West => Direction::North,
+            Direction::NorthEast => Direction::SouthEast,
+            Direction::NorthWest => Direction::NorthEast,
+            Direction::SouthEast => Direction::SouthWest,
+            Direction::SouthWest => Direction::NorthWest,
+        }
+    }
+
+    pub fn turn_left(&self) ->Direction {
+        match self {
+            Direction::North => Direction::West,
+            Direction::South => Direction::East,
+            Direction::East => Direction::North,
+            Direction::West => Direction::South,
+            Direction::NorthEast => Direction::NorthWest,
+            Direction::NorthWest => Direction::SouthWest,
+            Direction::SouthEast => Direction::NorthEast,
+            Direction::SouthWest => Direction::SouthEast,
+        }
+    }
 }
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy, Hash)]
