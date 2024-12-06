@@ -1,3 +1,5 @@
+
+#[derive(Clone)]
 pub struct Grid<T> {
     data: Vec<T>,
     row_len: usize,
@@ -28,6 +30,10 @@ impl<T> Grid<T> {
 
     pub fn get(&self, coord: Coordinate) -> &T {
         &self.data[coord.y * self.row_count + coord.x]
+    }
+
+    pub fn set(&mut self, coord:Coordinate, value: T) {
+        self.data[coord.y * self.row_count + coord.x] = value;
     }
 
     pub fn get_all_neighbours(&self, location: Coordinate) -> Vec<Neighbour<T>> {
