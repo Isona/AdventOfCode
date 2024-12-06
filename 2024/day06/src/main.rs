@@ -1,4 +1,6 @@
-use aoc_lib::{Direction, Grid};
+use std::collections::HashSet;
+
+use aoc_lib::{Coordinate, Direction, Grid};
 
 const INPUT: &str = include_str!("input.txt");
 
@@ -40,30 +42,29 @@ fn part_2(input: Grid<Location>) -> u64 {
     let mut potential_obstacles = 0;
     let mut trajectory;
 
+
     for (new_obstacle_coord, value) in input.indexed_iter() {
+        let mut visited: HashSet<(Coordinate, Direction)> = HashSet::new();
         if value != &Location::Visited {
             continue;
         }
 
-        let mut visited = false;
         guard_location = initial_guard_location;
         trajectory = Direction::North;
 
         while let Some(next_location) = input.get_neighbour(&guard_location, &trajectory) {
-            if next_location.location == new_obstacle_coord && !visited{
-                visited = true;
+            if next_location.location == new_obstacle_coord{
                 trajectory = trajectory.turn_right();
-            }
-            else if next_location.location == new_obstacle_coord && visited {
-                println!("New obstacle at {new_obstacle_coord:#?}");
-                potential_obstacles += 1;
-                break;
             }
             else if next_location.value == &Location::Obstacle {
                 trajectory = trajectory.turn_right();
             }
             else {
                 guard_location = next_location.location;
+                if !visited.insert((next_location.location, trajectory)) {
+                    potential_obstacles += 1;
+                    break
+                }
             }
         }
     }
