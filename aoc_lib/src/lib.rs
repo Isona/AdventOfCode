@@ -1,4 +1,3 @@
-
 #[derive(Clone)]
 pub struct Grid<T> {
     data: Vec<T>,
@@ -32,7 +31,7 @@ impl<T> Grid<T> {
         &self.data[coord.y * self.row_count + coord.x]
     }
 
-    pub fn set(&mut self, coord:Coordinate, value: T) {
+    pub fn set(&mut self, coord: Coordinate, value: T) {
         self.data[coord.y * self.row_count + coord.x] = value;
     }
 
@@ -114,10 +113,7 @@ impl<T> Grid<T> {
 
     pub fn indexed_iter(&self) -> impl Iterator<Item = (Coordinate, &T)> {
         self.data.iter().enumerate().map(move |(idx, i)| {
-            let position = Coordinate {
-                x: idx % self.row_len,
-                y: idx / self.row_len,
-            };
+            let position = self.index_to_coord(idx);
             (position, i)
         })
     }
@@ -126,13 +122,27 @@ impl<T> Grid<T> {
     where
         T: Eq,
     {
-        for (coord, value) in self.indexed_iter() {
-            if value == input {
-                return Some(coord);
-            }
-        }
+        self.data
+            .iter()
+            .position(|x| x == input)
+            .map(|index| self.index_to_coord(index))
+    }
 
-        None
+    pub fn find_all(&self, input: &T) -> Vec<Coordinate>
+    where
+        T: Eq,
+    {
+        self.indexed_iter()
+            .filter(|x| x.1 == input)
+            .map(|x| x.0)
+            .collect()
+    }
+
+    fn index_to_coord(&self, index: usize) -> Coordinate {
+        Coordinate {
+            x: index % self.row_len,
+            y: index / self.row_len,
+        }
     }
 }
 
@@ -212,7 +222,7 @@ impl Direction {
         }
     }
 
-    pub fn turn_left(&self) ->Direction {
+    pub fn turn_left(&self) -> Direction {
         match self {
             Direction::North => Direction::West,
             Direction::South => Direction::East,
@@ -233,22 +243,7 @@ pub struct Coordinate {
 }
 
 impl Coordinate {
-    pub fn get_distance(&self, other: Coordinate) -> usize {
-        return &self.x.abs_diff(other.x) + &self.y.abs_diff(other.y);
-    }
-}
-
-pub fn add(left: usize, right: usize) -> usize {
-    left + right
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
+    pub fn get_distance(&self, other: Self) -> usize {
+        self.x.abs_diff(other.x) + self.y.abs_diff(other.y)
     }
 }
