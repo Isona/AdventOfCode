@@ -110,7 +110,7 @@ impl<T> Grid<T> {
     }
 
     pub fn is_valid_coord(&self, coord: Coordinate) -> bool {
-        coord.x < self.row_len && coord.y < self.data.len()
+        coord.x < self.row_len && coord.y < self.row_count
     }
 
     pub fn indexed_iter(&self) -> impl Iterator<Item = (Coordinate, &T)> {
@@ -280,6 +280,60 @@ impl Vector {
             x: b.x as i128 - a.x as i128,
             y: b.y as i128 - a.y as i128,
         }
+    }
+}
+
+#[cfg(test)]
+mod grid_tests {
+    use super::*;
+    const TESTINPUT: [[i32; 4]; 4] = [
+        [1, 2, 3, 4],
+        [5, 6, 7, 8],
+        [9, 10, 11, 12],
+        [13, 14, 15, 16],
+    ];
+
+    fn get_test_grid() -> Grid<i32> {
+        let mut grid = Grid::new();
+
+        for array in TESTINPUT {
+            grid.push_row(array.to_vec());
+        }
+
+        grid
+    }
+
+    #[test]
+    fn is_valid_coord_test() {
+        let grid = get_test_grid();
+
+        // Min x and y
+        let mut coord = Coordinate { x: 0, y: 0 };
+        assert!(grid.is_valid_coord(coord));
+
+        // Valid, on edges
+        coord = Coordinate { x: 2, y: 1 };
+        assert!(grid.is_valid_coord(coord));
+
+        // Bottom right corner
+        coord = Coordinate { x: 3, y: 3 };
+        assert!(grid.is_valid_coord(coord));
+
+        // x out of bounds
+        coord = Coordinate { x: 4, y: 3 };
+        assert!(!grid.is_valid_coord(coord));
+
+        // y out of bounds
+        coord = Coordinate { x: 3, y: 4 };
+        assert!(!grid.is_valid_coord(coord));
+
+        // Both out of bounds
+        coord = Coordinate { x: 4, y: 4 };
+        assert!(!grid.is_valid_coord(coord));
+
+        // Both very out of bounds
+        coord = Coordinate { x: 412, y: 561 };
+        assert!(!grid.is_valid_coord(coord));
     }
 }
 
