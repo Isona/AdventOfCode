@@ -1,3 +1,5 @@
+use std::vec;
+
 #[derive(Clone)]
 pub struct Grid<T> {
     data: Vec<T>,
@@ -245,5 +247,79 @@ pub struct Coordinate {
 impl Coordinate {
     pub fn get_distance(&self, other: Self) -> usize {
         self.x.abs_diff(other.x) + self.y.abs_diff(other.y)
+    }
+
+    pub fn add_vec(&self, vector: &Vector) -> Option<Coordinate> {
+        let x = self.x.checked_add_signed(vector.x.try_into().unwrap())?;
+        let y = self.y.checked_add_signed(vector.y.try_into().unwrap())?;
+
+        Some(Coordinate { x, y })
+    }
+
+    pub fn sub_vec(&self, vector: &Vector) -> Option<Coordinate> {
+        let x = self
+            .x
+            .checked_add_signed(vector.x.checked_neg().unwrap().try_into().unwrap())?;
+        let y = self
+            .y
+            .checked_add_signed(vector.y.checked_neg().unwrap().try_into().unwrap())?;
+
+        Some(Coordinate { x, y })
+    }
+}
+
+#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy, Hash)]
+pub struct Vector {
+    x: i128,
+    y: i128,
+}
+
+impl Vector {
+    pub fn get_difference(a: Coordinate, b: Coordinate) -> Self {
+        Vector {
+            x: b.x as i128 - a.x as i128,
+            y: b.y as i128 - a.y as i128,
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn vector_get_difference() {
+        let coord_1: Coordinate = Coordinate { x: 12, y: 61 };
+        let coord_2: Coordinate = Coordinate { x: 612, y: 18 };
+        let vector = Vector::get_difference(coord_1, coord_2);
+        assert_eq!(vector, Vector { x: 600, y: -43 });
+    }
+
+    #[test]
+    fn vector_add_success() {
+        let coord: Coordinate = Coordinate { x: 12, y: 61 };
+        let vec: Vector = Vector { x: -11, y: -11 };
+        assert_eq!(coord.add_vec(&vec).unwrap(), Coordinate { x: 1, y: 50 });
+    }
+
+    #[test]
+    fn vector_add_failure() {
+        let coord: Coordinate = Coordinate { x: 12, y: 61 };
+        let vec: Vector = Vector { x: -13, y: -11 };
+        assert_eq!(coord.add_vec(&vec), None);
+    }
+
+    #[test]
+    fn vector_sub_success() {
+        let coord: Coordinate = Coordinate { x: 12, y: 61 };
+        let vec: Vector = Vector { x: 11, y: 11 };
+        assert_eq!(coord.sub_vec(&vec).unwrap(), Coordinate { x: 1, y: 50 });
+    }
+
+    #[test]
+    fn vector_sub_failure() {
+        let coord: Coordinate = Coordinate { x: 12, y: 61 };
+        let vec: Vector = Vector { x: 13, y: 11 };
+        assert_eq!(coord.sub_vec(&vec), None);
     }
 }
