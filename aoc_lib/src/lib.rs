@@ -275,7 +275,7 @@ pub struct Vector {
 }
 
 impl Vector {
-    pub fn get_difference(a: Coordinate, b: Coordinate) -> Self {
+    pub fn get_difference(a: &Coordinate, b: &Coordinate) -> Self {
         Vector {
             x: b.x as i128 - a.x as i128,
             y: b.y as i128 - a.y as i128,
@@ -291,7 +291,7 @@ mod tests {
     fn vector_get_difference() {
         let coord_1: Coordinate = Coordinate { x: 12, y: 61 };
         let coord_2: Coordinate = Coordinate { x: 612, y: 18 };
-        let vector = Vector::get_difference(coord_1, coord_2);
+        let vector = Vector::get_difference(&coord_1, &coord_2);
         assert_eq!(vector, Vector { x: 600, y: -43 });
     }
 
