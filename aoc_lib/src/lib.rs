@@ -122,7 +122,7 @@ impl<T> Grid<T> {
 
     pub fn find_item(&self, input: &T) -> Option<Coordinate>
     where
-        T: Eq,
+        T: PartialEq,
     {
         self.data
             .iter()
@@ -132,7 +132,7 @@ impl<T> Grid<T> {
 
     pub fn find_all(&self, input: &T) -> Vec<Coordinate>
     where
-        T: Eq,
+        T: PartialEq,
     {
         self.indexed_iter()
             .filter(|x| x.1 == input)
