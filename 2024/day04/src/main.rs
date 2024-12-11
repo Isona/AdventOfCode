@@ -28,10 +28,9 @@ fn xmas_matches_from_coord(input: &Grid<char>, x_coord: Coordinate) -> u64 {
 
     for m_coord in input.get_all_neighbours(x_coord) {
         if m_coord.value == &'M' {
-            if let Some(a_coord) = input.get_neighbour(&m_coord.location, &m_coord.direction) {
+            if let Some(a_coord) = input.get_neighbour(m_coord.location, m_coord.direction) {
                 if a_coord.value == &'A' {
-                    if let Some(s_coord) =
-                        input.get_neighbour(&a_coord.location, &m_coord.direction)
+                    if let Some(s_coord) = input.get_neighbour(a_coord.location, m_coord.direction)
                     {
                         if s_coord.value == &'S' {
                             count += 1;
@@ -57,15 +56,15 @@ fn part_2(input: &Grid<char>) -> u64 {
 }
 
 fn is_cross_mas(input: &Grid<char>, a_coord: Coordinate) -> bool {
-    let neighbours = input.get_all_neighbours(a_coord);
+    let neighbours: Vec<_> = input.get_all_neighbours(a_coord).collect();
     // If there are fewer than 8 neighbours then this is an edge and can't be a cross
     if neighbours.len() != 8 {
         return false;
     }
     let mut arm_count = 0;
-    let intercardinals = Direction::get_intercardinals();
     for m_coord in &neighbours {
-        if intercardinals.contains(&m_coord.direction) && m_coord.value == &'M' {
+        if Direction::get_intercardinals().any(|x| x == m_coord.direction) && m_coord.value == &'M'
+        {
             let s_direction = m_coord.direction.get_opposite();
             for s_coord in &neighbours {
                 if s_coord.direction == s_direction && s_coord.value == &'S' {

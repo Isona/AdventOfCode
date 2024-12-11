@@ -1,6 +1,6 @@
 use std::vec;
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct Grid<T> {
     data: Vec<T>,
     row_len: usize,
@@ -12,11 +12,7 @@ impl<T> Grid<T> {
     where
         T: Default,
     {
-        Self {
-            data: vec![],
-            row_len: 0,
-            row_count: 0,
-        }
+        Self::default()
     }
 
     pub fn push_row(&mut self, new_row: Vec<T>) {
@@ -37,33 +33,31 @@ impl<T> Grid<T> {
         self.data[coord.y * self.row_count + coord.x] = value;
     }
 
-    pub fn get_all_neighbours(&self, location: Coordinate) -> Vec<Neighbour<T>> {
-        self.get_neighbours(&location, &Direction::get_all())
+    pub fn get_all_neighbours(&self, location: Coordinate) -> impl Iterator<Item = Neighbour<T>> {
+        self.get_neighbours(location, Direction::get_all())
     }
 
-    pub fn get_cardinal_neighbours(&self, location: Coordinate) -> Vec<Neighbour<T>> {
-        self.get_neighbours(&location, &Direction::get_cardinals())
-    }
-
-    pub fn get_neighbours(
+    pub fn get_cardinal_neighbours(
         &self,
-        location: &Coordinate,
-        directions: &[Direction],
-    ) -> Vec<Neighbour<T>> {
-        let mut neighbours = Vec::new();
-        for direction in directions {
-            if let Some(neighbour) = self.get_neighbour(location, direction) {
-                neighbours.push(neighbour);
-            }
-        }
+        location: Coordinate,
+    ) -> impl Iterator<Item = Neighbour<T>> {
+        self.get_neighbours(location, Direction::get_cardinals())
+    }
 
-        neighbours
+    pub fn get_neighbours<'this>(
+        &'this self,
+        location: Coordinate,
+        directions: impl IntoIterator<Item = Direction> + 'this,
+    ) -> impl Iterator<Item = Neighbour<'this, T>> + 'this {
+        directions
+            .into_iter()
+            .filter_map(move |direction| self.get_neighbour(location, direction))
     }
 
     pub fn get_neighbour(
         &self,
-        location: &Coordinate,
-        direction: &Direction,
+        location: Coordinate,
+        direction: Direction,
     ) -> Option<Neighbour<T>> {
         let new_x = match direction {
             Direction::East | Direction::NorthEast | Direction::SouthEast => {
@@ -105,7 +99,7 @@ impl<T> Grid<T> {
         Some(Neighbour {
             value: self.get(neighbour_coord),
             location: neighbour_coord,
-            direction: *direction,
+            direction,
         })
     }
 
@@ -130,14 +124,16 @@ impl<T> Grid<T> {
             .map(|index| self.index_to_coord(index))
     }
 
-    pub fn find_all(&self, input: &T) -> Vec<Coordinate>
+    pub fn find_all<'self_>(
+        &'self_ self,
+        input: &'self_ T,
+    ) -> impl Iterator<Item = Coordinate> + 'self_
     where
         T: PartialEq,
     {
         self.indexed_iter()
-            .filter(|x| x.1 == input)
+            .filter(move |x| x.1 == input)
             .map(|x| x.0)
-            .collect()
     }
 
     fn index_to_coord(&self, index: usize) -> Coordinate {
@@ -167,26 +163,28 @@ pub enum Direction {
 }
 
 impl Direction {
-    pub fn get_cardinals() -> Vec<Direction> {
-        vec![
+    pub fn get_cardinals() -> impl Iterator<Item = Direction> {
+        [
             Direction::North,
             Direction::South,
             Direction::East,
             Direction::West,
         ]
+        .into_iter()
     }
 
-    pub fn get_intercardinals() -> Vec<Direction> {
-        vec![
+    pub fn get_intercardinals() -> impl Iterator<Item = Direction> {
+        [
             Direction::NorthEast,
             Direction::NorthWest,
             Direction::SouthEast,
             Direction::SouthWest,
         ]
+        .into_iter()
     }
 
-    pub fn get_all() -> Vec<Direction> {
-        vec![
+    pub fn get_all() -> impl Iterator<Item = Direction> {
+        [
             Direction::North,
             Direction::South,
             Direction::East,
@@ -196,6 +194,7 @@ impl Direction {
             Direction::SouthEast,
             Direction::SouthWest,
         ]
+        .into_iter()
     }
 
     pub fn get_opposite(&self) -> Direction {

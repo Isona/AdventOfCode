@@ -18,11 +18,10 @@ fn part_1(input: &mut Grid<Location>) -> usize {
     let mut guard_location = input.find_item(&Location::Guard).unwrap();
     let mut trajectory = Direction::North;
 
-    while let Some(next_location) = input.get_neighbour(&guard_location, &trajectory) {
+    while let Some(next_location) = input.get_neighbour(guard_location, trajectory) {
         if next_location.value == &Location::Obstacle {
             trajectory = trajectory.turn_right();
-        }
-        else {
+        } else {
             guard_location = next_location.location;
             if next_location.value != &Location::Guard {
                 input.set(guard_location, Location::Visited);
@@ -31,17 +30,19 @@ fn part_1(input: &mut Grid<Location>) -> usize {
     }
 
     // + 1 for the initial guard location
-    input.indexed_iter().filter(|(_, x) | x == &&Location::Visited).count() + 1
+    input
+        .indexed_iter()
+        .filter(|(_, x)| x == &&Location::Visited)
+        .count()
+        + 1
 }
 
 fn part_2(input: Grid<Location>) -> u64 {
-
     let initial_guard_location = input.find_item(&Location::Guard).unwrap();
-    let mut guard_location ;
+    let mut guard_location;
 
     let mut potential_obstacles = 0;
     let mut trajectory;
-
 
     for (new_obstacle_coord, value) in input.indexed_iter() {
         let mut visited: HashSet<(Coordinate, Direction)> = HashSet::new();
@@ -52,18 +53,16 @@ fn part_2(input: Grid<Location>) -> u64 {
         guard_location = initial_guard_location;
         trajectory = Direction::North;
 
-        while let Some(next_location) = input.get_neighbour(&guard_location, &trajectory) {
-            if next_location.location == new_obstacle_coord{
+        while let Some(next_location) = input.get_neighbour(guard_location, trajectory) {
+            if next_location.location == new_obstacle_coord
+                || next_location.value == &Location::Obstacle
+            {
                 trajectory = trajectory.turn_right();
-            }
-            else if next_location.value == &Location::Obstacle {
-                trajectory = trajectory.turn_right();
-            }
-            else {
+            } else {
                 guard_location = next_location.location;
                 if !visited.insert((next_location.location, trajectory)) {
                     potential_obstacles += 1;
-                    break
+                    break;
                 }
             }
         }

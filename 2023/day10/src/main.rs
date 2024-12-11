@@ -36,7 +36,7 @@ fn part_1(input: &Grid<Pipe>) -> usize {
             searched_coords.insert(coord, steps);
             let current_pipe = input.get(coord);
             let new_trajectory = current_pipe.get_next_trajectory(trajectory).unwrap();
-            let neighbour = input.get_neighbour(&coord, &new_trajectory).unwrap();
+            let neighbour = input.get_neighbour(coord, new_trajectory).unwrap();
             let next_steps = steps + 1;
             coords_to_search.push((neighbour.location, new_trajectory, next_steps));
         }

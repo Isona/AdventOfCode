@@ -23,9 +23,9 @@ fn part_1(input: &Grid<char>, unique_values: &HashSet<char>) -> usize {
         }
         let signal_locations = input.find_all(satellite_type);
 
-        for pair in signal_locations.iter().combinations(2) {
+        for pair in signal_locations.combinations(2) {
             assert!(pair.len() == 2);
-            let difference = Vector::get_difference(pair[0], pair[1]);
+            let difference = Vector::get_difference(&pair[0], &pair[1]);
             if let Some(subtracted) = pair[0].sub_vec(&difference) {
                 if input.is_valid_coord(subtracted) {
                     antinode_locations.insert(subtracted);
@@ -52,12 +52,12 @@ fn part_2(input: &Grid<char>, unique_values: &HashSet<char>) -> usize {
         }
         let signal_locations = input.find_all(satellite_type);
 
-        for pair in signal_locations.iter().combinations(2) {
-            assert!(pair.len() == 2);
-            antinode_locations.insert(*pair[0]);
-            antinode_locations.insert(*pair[1]);
+        for pair in signal_locations.combinations(2) {
+            assert_eq!(pair.len(), 2);
+            antinode_locations.insert(pair[0]);
+            antinode_locations.insert(pair[1]);
 
-            let difference = Vector::get_difference(pair[0], pair[1]);
+            let difference = Vector::get_difference(&pair[0], &pair[1]);
             let mut current_coord_opt = pair[0].sub_vec(&difference);
             while let Some(current_coord) = current_coord_opt {
                 if input.is_valid_coord(current_coord) {
