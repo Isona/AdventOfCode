@@ -16,6 +16,7 @@ fn main() {
         "Part 2: {part_2_answer} in {:.3} ms",
         start.elapsed().as_secs_f32() * 1000.0
     );
+}
 
 fn part_1(input: &[u64]) -> u64 {
     todo!();
