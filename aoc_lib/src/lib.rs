@@ -140,6 +140,24 @@ impl<T> Grid<T> {
             y: index / self.row_len,
         }
     }
+
+    pub fn are_locations_equal(&self, first: Coordinate, second: Coordinate) -> bool
+    where
+        T: PartialEq,
+    {
+        self.get(first) == self.get(second)
+    }
+
+    pub fn matches_neighbour(&self, location: Coordinate, direction: Direction) -> bool
+    where
+        T: PartialEq,
+    {
+        if let Some(neighbour) = self.get_neighbour(location, direction) {
+            return neighbour.value == self.get(location);
+        }
+
+        false
+    }
 }
 
 pub struct Neighbour<'a, T> {
