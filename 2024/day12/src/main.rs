@@ -9,15 +9,10 @@ fn main() {
 
     let start = std::time::Instant::now();
     let (part_1_answer, part_2_answer) = part_1(&input);
-    println!(
-        "Part 1: {part_1_answer} in {:.3} ms",
-        start.elapsed().as_secs_f32() * 1000.0
-    );
+    let time_taken = start.elapsed().as_secs_f32() * 1000.0;
+    println!("Part 1: {part_1_answer} in {time_taken:.3} ms");
 
-    println!(
-        "Part 2: {part_2_answer} in {:.3} ms",
-        start.elapsed().as_secs_f32() * 1000.0
-    );
+    println!("Part 2: {part_2_answer} in {time_taken:.3} ms");
 }
 
 #[expect(clippy::map_entry)]
