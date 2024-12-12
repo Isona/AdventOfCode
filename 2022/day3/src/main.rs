@@ -22,14 +22,14 @@ fn part_1(backpacks: &Vec<Backpack>) -> i32 {
     priority_sum
 }
 
-fn part_2(backpacks: &Vec<Backpack>) -> i32 {
+fn part_2(backpacks: &[Backpack]) -> i32 {
     let mut badge_sum = 0;
 
-    //let mut backpack_iter = backpacks.chunks(3);
-
     for security_group in backpacks.chunks_exact(3) {
-        let [backpack, backpack2, backpack3] = security_group else {panic!()};
-        badge_sum += get_item_value(backpack.get_security_badge(&backpack2, &backpack3));
+        let [backpack, backpack2, backpack3] = security_group else {
+            panic!()
+        };
+        badge_sum += get_item_value(backpack.get_security_badge(backpack2, backpack3));
     }
 
     badge_sum
@@ -59,26 +59,24 @@ impl Backpack {
     }
 
     fn get_intersection(&self) -> char {
-        return self
+        *self
             .first_compartment
             .intersection(&self.second_compartment)
             .next()
             .unwrap()
-            .clone();
     }
 
     fn get_security_badge(&self, second_elf: &Backpack, third_elf: &Backpack) -> char {
         let mut first_intersection = self.all_items.intersection(&second_elf.all_items);
 
-        first_intersection
+        *first_intersection
             .find(|x| third_elf.all_items.contains(x))
             .unwrap()
-            .clone()
     }
 }
 
 fn parse_input(input: &str) -> Vec<Backpack> {
-    input.lines().map(|x| Backpack::get_backpack(x)).collect()
+    input.lines().map(Backpack::get_backpack).collect()
 }
 
 #[cfg(test)]

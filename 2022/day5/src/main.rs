@@ -63,6 +63,6 @@ mod tests {
     #[test]
     fn part_2_test() {
         let (crates, instructions) = parse_input(TESTINPUT);
-        assert_eq!(part_2(crates, &instructions), 5);
+        assert_eq!(part_2(crates, &instructions), "TODO");
     }
 }

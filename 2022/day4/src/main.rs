@@ -13,7 +13,7 @@ fn main() {
 fn part_1(input: &Vec<(AssignedSections, AssignedSections)>) -> i32 {
     let mut overlapping_pairs = 0;
     for (sections1, sections2) in input {
-        if (sections1.is_subset(sections2)) {
+        if sections1.is_subset(sections2) {
             overlapping_pairs += 1;
         }
     }
@@ -24,7 +24,7 @@ fn part_1(input: &Vec<(AssignedSections, AssignedSections)>) -> i32 {
 fn part_2(input: &Vec<(AssignedSections, AssignedSections)>) -> i32 {
     let mut overlapping_pairs = 0;
     for (sections1, sections2) in input {
-        if (sections1.any_overlap(sections2)) {
+        if sections1.any_overlap(sections2) {
             overlapping_pairs += 1;
         }
     }

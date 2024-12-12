@@ -16,7 +16,7 @@ fn part_1(input: &[i32]) -> i32 {
 
     for value in input {
         if value > &previous_value {
-            count = count + 1
+            count += 1
         }
         previous_value = *value;
     }

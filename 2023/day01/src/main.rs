@@ -19,9 +19,10 @@ fn part_1(input: &Vec<&str>) -> u32 {
 }
 
 fn get_calibration(input: &str) -> u32 {
-    let digits: Vec<char> = input.chars().filter_map(|x| if  x.is_digit(10) {Some(x)} else {None}).collect();
-    format!("{}{}", digits[0], digits[digits.len() -1]).parse::<u32>().unwrap()
-
+    let digits: Vec<char> = input.chars().filter(|x| x.is_ascii_digit()).collect();
+    format!("{}{}", digits[0], digits[digits.len() - 1])
+        .parse::<u32>()
+        .unwrap()
 }
 
 fn part_2(input: &Vec<&str>) -> u32 {
@@ -43,8 +44,6 @@ fn part2_digit_replace(input: &str) -> String {
     output = str::replace(&output, "eight", "eig8ht");
     output = str::replace(&output, "nine", "ni9ne");
     output
-
-    
 }
 
 fn parse_input(input: &str) -> Vec<&str> {

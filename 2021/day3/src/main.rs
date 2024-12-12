@@ -36,7 +36,7 @@ fn part_2(input: &str) -> u32 {
 
     let sample_length = input.lines().next().unwrap().len();
 
-    let mut oxygen_input: Vec<_> = input.clone().lines().collect();
+    let mut oxygen_input: Vec<_> = input.lines().collect();
 
     for i in 0..sample_length {
         if oxygen_input.len() == 1 {
@@ -62,7 +62,7 @@ fn part_2(input: &str) -> u32 {
         oxygen_input.retain(|x| x.chars().nth(i) == Some(most_popular));
     }
 
-    let mut co2_input: Vec<_> = input.clone().lines().collect();
+    let mut co2_input: Vec<_> = input.lines().collect();
 
     for i in 0..sample_length {
         if co2_input.len() == 1 {
@@ -78,7 +78,7 @@ fn part_2(input: &str) -> u32 {
             .count();
 
         co2_rating <<= 1;
-        co2_rating |= !(one_count >= sample_count - one_count) as u32;
+        co2_rating |= (one_count < sample_count - one_count) as u32;
         let least_popular = if one_count >= sample_count - one_count {
             '0'
         } else {

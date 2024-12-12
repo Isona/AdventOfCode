@@ -12,11 +12,11 @@ fn main() {
     println!("{part_2_answer}");
 }
 
-fn part_1(input: &Vec<char>) -> usize {
+fn part_1(input: &[char]) -> usize {
     find_unique_window(input, 4)
 }
 
-fn part_2(input: &Vec<char>) -> usize {
+fn part_2(input: &[char]) -> usize {
     find_unique_window(input, 14)
 }
 
@@ -24,7 +24,7 @@ fn parse_input(input: &str) -> Vec<char> {
     input.chars().collect()
 }
 
-fn find_unique_window(input: &Vec<char>, window_len: usize) -> usize {
+fn find_unique_window(input: &[char], window_len: usize) -> usize {
     for (index, window) in input.windows(window_len).enumerate() {
         let unique_values = HashSet::<&char>::from_iter(window.iter());
         if unique_values.len() == window_len {

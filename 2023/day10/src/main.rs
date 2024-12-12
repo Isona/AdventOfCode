@@ -45,6 +45,7 @@ fn part_1(input: &Grid<Pipe>) -> usize {
     *searched_coords.values().max().unwrap()
 }
 
+#[expect(unused_variables)]
 fn part_2(input: &Grid<Pipe>) -> u64 {
     todo!();
 }
@@ -57,7 +58,7 @@ fn get_start_connections(input: &Grid<Pipe>) -> Vec<(Coordinate, Direction)> {
 
     let mut valid_neighbours: Vec<(Coordinate, Direction)> = vec![];
 
-    for (neighbour) in all_neighbours {
+    for neighbour in all_neighbours {
         let pipe = input.get(neighbour.location);
         if pipe.get_next_trajectory(neighbour.direction).is_some() {
             valid_neighbours.push((neighbour.location, neighbour.direction));

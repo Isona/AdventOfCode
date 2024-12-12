@@ -1,5 +1,3 @@
-use std::vec;
-
 #[derive(Clone, Default)]
 pub struct Grid<T> {
     data: Vec<T>,

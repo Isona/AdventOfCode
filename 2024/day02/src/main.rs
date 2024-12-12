@@ -10,18 +10,21 @@ fn main() {
     println!("Part 2: {part_2_answer}");
 }
 
-fn part_1(reports: &Vec<Vec<u64>>) -> usize {
-    reports.iter().filter(|report: &&Vec<u64>| is_safe(*report)).count()
+fn part_1(reports: &[Vec<u64>]) -> usize {
+    reports
+        .iter()
+        .filter(|report: &&Vec<u64>| is_safe(report))
+        .count()
 }
 
 fn is_safe(report: &[u64]) -> bool {
     if !report.is_sorted() && !report.is_sorted_by(|a, b| a > b) {
-        return false
+        return false;
     }
     for window in report.windows(2) {
         let diff = window[0].abs_diff(window[1]);
-        if diff > 3 || diff < 1 {
-            return false
+        if !(1..=3).contains(&diff) {
+            return false;
         }
     }
 
@@ -31,7 +34,7 @@ fn is_safe(report: &[u64]) -> bool {
 fn part_2(reports: &mut Vec<Vec<u64>>) -> u64 {
     let mut safetotal = 0;
 
-    'outer: for report in reports { 
+    'outer: for report in reports {
         if is_safe(report) {
             safetotal += 1;
             continue;
@@ -54,7 +57,7 @@ fn parse_input(input: &str) -> Vec<Vec<u64>> {
     for line in input.lines() {
         reports.push(line.split(' ').map(|x| x.parse::<u64>().unwrap()).collect());
     }
-    
+
     reports
 }
 

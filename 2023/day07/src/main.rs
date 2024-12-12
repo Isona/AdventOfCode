@@ -13,6 +13,7 @@ fn main() {
     println!("Part 2: {part_2_answer}");
 }
 
+#[expect(clippy::ptr_arg)]
 fn calculate_winnings(input: &Vec<(Hand, u64)>) -> u64 {
     let mut part_1_total = 0;
     let mut hand_rank = 1;

@@ -12,12 +12,12 @@ fn main() {
     println!("Part 2: {part_2_answer}");
 }
 
-fn part_1(directions: &String, nodes: &HashMap<String, (String, String)>) -> usize {
+fn part_1(directions: &str, nodes: &HashMap<String, (String, String)>) -> usize {
     let mut current_node = "AAA".to_string();
     let mut steps = 0;
     let directions: Vec<char> = directions.chars().collect();
 
-    while current_node != "ZZZ".to_string() {
+    while current_node != *"ZZZ" {
         match directions[steps % directions.len()] {
             'L' => current_node = nodes.get(&current_node).unwrap().0.clone(),
             'R' => current_node = nodes.get(&current_node).unwrap().1.clone(),
@@ -30,7 +30,7 @@ fn part_1(directions: &String, nodes: &HashMap<String, (String, String)>) -> usi
     steps
 }
 
-fn part_2(directions: &String, nodes: &HashMap<String, (String, String)>) -> u128 {
+fn part_2(directions: &str, nodes: &HashMap<String, (String, String)>) -> u128 {
     let a_nodes: Vec<String> = nodes
         .keys()
         .filter_map(|x| {

@@ -30,7 +30,7 @@ fn part_2(input: &Vec<Vec<i64>>) -> i64 {
     sum
 }
 
-fn calculate_next(series: &Vec<i64>) -> i64 {
+fn calculate_next(series: &[i64]) -> i64 {
     let mut differences = vec![];
     let mut all_zero = true;
     for pair in series.windows(2) {
@@ -52,7 +52,7 @@ fn calculate_next(series: &Vec<i64>) -> i64 {
     }
 }
 
-fn calculate_last(series: &Vec<i64>) -> i64 {
+fn calculate_last(series: &[i64]) -> i64 {
     let mut differences = vec![];
     let mut all_zero = true;
     for pair in series.windows(2) {

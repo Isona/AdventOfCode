@@ -29,6 +29,7 @@ fn part_1(rules: &Vec<Rule>, reports: &Vec<Vec<u64>>) -> (u64, u64) {
     (part_1_total, part_2_total)
 }
 
+#[allow(clippy::ptr_arg)]
 fn reorder_report(rules: &Vec<Rule>, report: &Vec<u64>) -> Vec<u64> {
     let mut reordered_report = report.clone();
 

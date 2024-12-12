@@ -41,7 +41,7 @@ impl Round {
         let second_item = input.next().unwrap();
 
         Round {
-            opponent_shape: opponent_shape,
+            opponent_shape,
             my_shape: Shape::get_shape(second_item),
             desired_result: RoundResult::get_result(second_item),
         }
@@ -137,7 +137,7 @@ impl RoundResult {
 }
 
 fn parse_input(input: &str) -> Vec<Round> {
-    input.lines().map(|x| Round::get_round(x)).collect()
+    input.lines().map(Round::get_round).collect()
 }
 
 #[cfg(test)]
