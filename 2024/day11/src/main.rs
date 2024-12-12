@@ -5,11 +5,17 @@ const INPUT: &str = include_str!("input.txt");
 fn main() {
     let input = parse_input(INPUT);
 
+    let start = std::time::Instant::now();
     let part_1_answer = part_1(&input);
-    println!("Part 1: {part_1_answer}");
 
+    let time_taken = start.elapsed().as_secs_f32() * 1000.0;
+    println!("Part 1: {part_1_answer} in {time_taken:.3} ms");
+
+    let start = std::time::Instant::now();
     let part_2_answer = part_2(&input);
-    println!("Part 2: {part_2_answer}");
+
+    let time_taken = start.elapsed().as_secs_f32() * 1000.0;
+    println!("Part 2: {part_2_answer} in {time_taken:.3} ms");
 }
 
 fn part_1(input: &HashMap<u64, u64>) -> u64 {
@@ -51,18 +57,21 @@ fn do_iteration(input: &HashMap<u64, u64>) -> HashMap<u64, u64> {
                 .and_modify(|x| *x += *stone_count)
                 .or_insert(*stone_count);
         }
-        // If the string length is divisible by 2
-        else if stone_type.to_string().len() % 2 == 0 {
-            let stone_string = stone_type.to_string();
-            let (first_half, second_half) = stone_string.split_at(stone_string.len() / 2);
+        // If the stone's length is divisible by 2
+        else if stone_type.ilog10() % 2 == 1 {
+            let log: u32 = (stone_type.ilog10() + 1) / 2;
+            let first_half = stone_type % 10u64.pow(log);
+            let second_half = stone_type / 10u64.pow(log);
+
             output
-                .entry(first_half.parse::<u64>().unwrap())
+                .entry(first_half)
                 .and_modify(|x| *x += *stone_count)
                 .or_insert(*stone_count);
             output
-                .entry(second_half.parse::<u64>().unwrap())
+                .entry(second_half)
                 .and_modify(|x| *x += *stone_count)
                 .or_insert(*stone_count);
+
         // Otherwise multiply by 2024
         } else {
             output
