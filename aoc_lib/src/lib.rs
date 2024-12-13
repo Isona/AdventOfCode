@@ -1,3 +1,5 @@
+use std::ops::{Add, Mul, Sub};
+
 #[derive(Clone, Default)]
 pub struct Grid<T> {
     data: Vec<T>,
@@ -253,13 +255,17 @@ impl Direction {
     }
 }
 
-#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy, Hash)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy, Hash, Default)]
 pub struct Coordinate {
-    x: usize,
-    y: usize,
+    pub x: usize,
+    pub y: usize,
 }
 
 impl Coordinate {
+    pub fn new(x: usize, y: usize) -> Self {
+        Coordinate { x, y }
+    }
+
     pub fn get_distance(&self, other: Self) -> usize {
         self.x.abs_diff(other.x) + self.y.abs_diff(other.y)
     }
@@ -283,18 +289,97 @@ impl Coordinate {
     }
 }
 
-#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy, Hash)]
+impl Mul for Coordinate {
+    type Output = Self;
+
+    fn mul(self, rhs: Self) -> Self {
+        let x = self.x * rhs.x;
+        let y = self.y * rhs.y;
+        Self::new(x, y)
+    }
+}
+
+impl Mul<usize> for Coordinate {
+    type Output = Self;
+
+    fn mul(self, rhs: usize) -> Self {
+        let x = self.x * rhs;
+        let y = self.y * rhs;
+        Self::new(x, y)
+    }
+}
+
+#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy, Hash, Default)]
 pub struct Vector {
     x: i128,
     y: i128,
 }
 
 impl Vector {
+    pub fn new(x: i128, y: i128) -> Self {
+        Vector { x, y }
+    }
+
     pub fn get_difference(a: &Coordinate, b: &Coordinate) -> Self {
         Vector {
             x: b.x as i128 - a.x as i128,
             y: b.y as i128 - a.y as i128,
         }
+    }
+}
+
+impl Mul for Vector {
+    type Output = Vector;
+    fn mul(self, rhs: Self) -> Self::Output {
+        let x = self.x * rhs.x;
+        let y = self.y * rhs.y;
+        Self::new(x, y)
+    }
+}
+
+impl Mul<i128> for Vector {
+    type Output = Vector;
+
+    fn mul(self, rhs: i128) -> Self::Output {
+        let x = self.x * rhs;
+        let y = self.y * rhs;
+        Self::new(x, y)
+    }
+}
+
+impl Add for Vector {
+    type Output = Vector;
+    fn add(self, rhs: Self) -> Self::Output {
+        let x = self.x + rhs.x;
+        let y = self.y + rhs.y;
+        Self::new(x, y)
+    }
+}
+
+impl Add<i128> for Vector {
+    type Output = Vector;
+    fn add(self, rhs: i128) -> Self::Output {
+        let x = self.x + rhs;
+        let y = self.y + rhs;
+        Self::new(x, y)
+    }
+}
+
+impl Sub for Vector {
+    type Output = Vector;
+    fn sub(self, rhs: Self) -> Self::Output {
+        let x = self.x - rhs.x;
+        let y = self.y - rhs.y;
+        Self::new(x, y)
+    }
+}
+
+impl Sub<i128> for Vector {
+    type Output = Vector;
+    fn sub(self, rhs: i128) -> Self::Output {
+        let x = self.x - rhs;
+        let y = self.y - rhs;
+        Self::new(x, y)
     }
 }
 
