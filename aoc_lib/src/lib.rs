@@ -311,8 +311,8 @@ impl Mul<usize> for Coordinate {
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy, Hash, Default)]
 pub struct Vector {
-    x: i128,
-    y: i128,
+    pub x: i128,
+    pub y: i128,
 }
 
 impl Vector {

@@ -1,7 +1,6 @@
 use regex::Regex;
-use std::collections::HashSet;
 
-use aoc_lib::{Coordinate, Vector};
+use aoc_lib::Vector;
 
 const INPUT: &str = include_str!("input.txt");
 
@@ -22,11 +21,14 @@ fn main() {
 }
 
 fn part_1(input: &[ClawMachine]) -> i128 {
-    input.iter().filter_map(ClawMachine::get_prize).sum()
+    input.iter().filter_map(|x| x.get_prize(0)).sum()
 }
 
-fn part_2(input: &[ClawMachine]) -> u64 {
-    todo!();
+fn part_2(input: &[ClawMachine]) -> i128 {
+    input
+        .iter()
+        .filter_map(|x| x.get_prize(10000000000000))
+        .sum()
 }
 
 /** Input looks like this, with a blank line between machines:
@@ -56,7 +58,7 @@ fn parse_input(input: &str) -> Vec<ClawMachine> {
         // Get prize
         let prize_caps = regex.captures(prize_str).unwrap();
         let (_, [x, y]) = prize_caps.extract();
-        let prize = Coordinate::new(x.parse().unwrap(), y.parse().unwrap());
+        let prize = Vector::new(x.parse().unwrap(), y.parse().unwrap());
 
         machines.push(ClawMachine {
             button1,
@@ -70,37 +72,58 @@ fn parse_input(input: &str) -> Vec<ClawMachine> {
 
 #[derive(Debug, PartialEq, Eq)]
 struct ClawMachine {
-    prize: Coordinate,
+    prize: Vector,
     button1: Vector,
     button2: Vector,
 }
 
 impl ClawMachine {
-    fn get_prize(&self) -> Option<i128> {
-        // No more than 100 presses of each button
-        let start = Coordinate::default();
-        let mut winning_ways: HashSet<(i128, i128)> = HashSet::new();
+    fn get_prize(&self, prize_addition: i128) -> Option<i128> {
+        // Get the correct prize location
+        let prize = self.prize + prize_addition;
 
-        for button1_presses in 1..100 {
-            let current_base_loc = start.add_vec(&(self.button1 * button1_presses)).unwrap();
+        // Example from test input:
+        // Equation 1: 94a + 22b = 8400 : button1.x, button2.x, prize.x
+        // Equation 2: 34a + 67b = 5400 : button1.y, button2.y, prize.y
 
-            if current_base_loc.x > self.prize.x || current_base_loc.y > self.prize.y {
-                break;
-            }
+        // Multiply the button 1 x and prize x values by button2.y
+        // 67*(94a + 22b = 8400) => 6298a + 1474b = 562800
+        let equation_1_a = self.button1.x * self.button2.y;
+        let equation_1_prize = prize.x * self.button2.y;
 
-            for button2_presses in 1..100 {
-                let current_location = current_base_loc
-                    .add_vec(&(self.button2 * button2_presses))
-                    .unwrap();
-                if current_location.x > self.prize.x || current_location.y > self.prize.y {
-                    break;
-                } else if current_location == self.prize {
-                    winning_ways.insert((button1_presses, button2_presses));
-                }
-            }
+        // Multiply the button 1.y and prize.y values by button2.x
+        // 22*(34a + 67b = 5400) => 748a + 1474b = 118800
+        let equation_2_a = self.button1.y * self.button2.x;
+        let equation_2_prize = prize.y * self.button2.x;
+
+        // Subtract the a and prize values
+        // (6298a + 1474b = 562800) - (748a + 1474b = 118800) => 5550a = 444000
+        let equation_3_a = equation_1_a - equation_2_a;
+        let equation_3_prize = equation_1_prize - equation_2_prize;
+
+        // If the prize value isn't divisible by a then it's not a valid solution
+        if equation_3_prize % equation_3_a != 0 {
+            return None;
         }
 
-        winning_ways.iter().map(|(x, y)| x * 3 + y).min()
+        // (5550a = 444000) / 5550 => a = 80
+        let presses_1 = equation_3_prize / equation_3_a;
+
+        // Look at equation 1 again: 94a + 22b = 8400
+        // 94(80) + 22b = 8400
+        // 22b = 8400 - 94(80) = 7520
+        let equation_4_prize = prize.x - (self.button1.x * presses_1);
+
+        // If the prize value isn't divisible by b then it's not valid
+        if equation_4_prize % self.button2.x != 0 {
+            return None;
+        }
+
+        // (22b = 8400) / 22
+        // b = 40
+        let presses_2 = equation_4_prize / self.button2.x;
+
+        Some(presses_1 * 3 + presses_2)
     }
 }
 
@@ -117,7 +140,7 @@ Prize: X=8400, Y=5400";
         let machines = parse_input(input);
         assert_eq!(machines.len(), 1);
         let test_machine = ClawMachine {
-            prize: Coordinate::new(8400, 5400),
+            prize: Vector::new(8400, 5400),
             button1: Vector::new(94, 34),
             button2: Vector::new(22, 67),
         };
@@ -128,34 +151,50 @@ Prize: X=8400, Y=5400";
     #[test]
     fn machine_test_winnable() {
         let machine = ClawMachine {
-            prize: Coordinate::new(8400, 5400),
+            prize: Vector::new(8400, 5400),
             button1: Vector::new(94, 34),
             button2: Vector::new(22, 67),
         };
 
-        assert_eq!(machine.get_prize(), Some(280));
+        assert_eq!(machine.get_prize(0), Some(280));
     }
 
     #[test]
     fn machine_test_unwinnable() {
         let machine = ClawMachine {
-            prize: Coordinate::new(12748, 12176),
+            prize: Vector::new(12748, 12176),
             button1: Vector::new(26, 66),
             button2: Vector::new(67, 21),
         };
 
-        assert_eq!(machine.get_prize(), None);
+        assert_eq!(machine.get_prize(0), None);
+    }
+
+    #[test]
+    fn machine_test_part_2() {
+        let machine = ClawMachine {
+            prize: Vector::new(12748, 12176),
+            button1: Vector::new(26, 66),
+            button2: Vector::new(67, 21),
+        };
+
+        assert_eq!(machine.get_prize(10000000000000), Some(459236326669));
+    }
+
+    #[test]
+    fn machine_test_part_2_unwinnable() {
+        let machine = ClawMachine {
+            prize: Vector::new(8400, 5400),
+            button1: Vector::new(94, 34),
+            button2: Vector::new(22, 67),
+        };
+
+        assert_eq!(machine.get_prize(10000000000000), None);
     }
 
     #[test]
     fn part_1_test() {
         let input = parse_input(TESTINPUT);
         assert_eq!(part_1(&input), 480);
-    }
-
-    #[test]
-    fn part_2_test() {
-        let input = parse_input(TESTINPUT);
-        assert_eq!(part_2(&input), 5);
     }
 }
