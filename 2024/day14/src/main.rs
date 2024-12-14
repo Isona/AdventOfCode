@@ -117,9 +117,9 @@ fn print_grid_at_second(robots: &[GuardRobot], grid_size: &(i128, i128), seconds
     for y in 0..grid_size.1 {
         for x in 0..grid_size.0 {
             if guard_positions.contains(&Vector::new(x, y)) {
-                print!("#");
+                print!("🤖");
             } else {
-                print!(" ");
+                print!("  ");
             }
         }
         println!();
