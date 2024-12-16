@@ -1,3 +1,5 @@
+use core::fmt;
+
 use crate::{coordinate::Coordinate, direction::Direction};
 
 #[derive(Clone, Default)]
@@ -26,11 +28,11 @@ impl<T> Grid<T> {
     }
 
     pub fn get(&self, coord: Coordinate) -> &T {
-        &self.data[coord.y * self.row_count + coord.x]
+        &self.data[coord.y * self.row_len + coord.x]
     }
 
     pub fn set(&mut self, coord: Coordinate, value: T) {
-        self.data[coord.y * self.row_count + coord.x] = value;
+        self.data[coord.y * self.row_len + coord.x] = value;
     }
 
     pub fn get_all_neighbours(&self, location: Coordinate) -> impl Iterator<Item = Neighbour<T>> {
@@ -182,6 +184,24 @@ impl<T> Grid<T> {
         }
 
         view
+    }
+}
+
+impl<T> fmt::Display for Grid<T>
+where
+    T: fmt::Display,
+{
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut output = "".to_string();
+        for i in 0..self.data.len() {
+            if i != 0 && i % self.row_len == 0 {
+                output.push('\n');
+            }
+
+            output.push_str(&self.data[i].to_string());
+        }
+
+        write!(f, "{}", output)
     }
 }
 

@@ -1,3 +1,4 @@
+use core::fmt;
 use std::ops::Mul;
 
 use crate::vector::Vector;
@@ -53,5 +54,11 @@ impl Mul<usize> for Coordinate {
         let x = self.x * rhs;
         let y = self.y * rhs;
         Self::new(x, y)
+    }
+}
+
+impl fmt::Display for Coordinate {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "({}, {})", self.x, self.y)
     }
 }

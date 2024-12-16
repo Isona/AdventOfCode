@@ -1,6 +1,6 @@
-use std::ops::{Add, Mul, Sub};
-
 use crate::coordinate::Coordinate;
+use core::fmt;
+use std::ops::{Add, Mul, Sub};
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy, Hash, Default)]
 pub struct Vector {
@@ -73,6 +73,12 @@ impl Sub<i128> for Vector {
         let x = self.x - rhs;
         let y = self.y - rhs;
         Self::new(x, y)
+    }
+}
+
+impl fmt::Display for Vector {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "({}, {})", self.x, self.y)
     }
 }
 
