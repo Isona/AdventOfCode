@@ -1,5 +1,5 @@
 use core::fmt;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use aoc_lib::{Coordinate, Direction, Grid};
 
@@ -36,21 +36,12 @@ fn traverse_warehouse(
         let Some(next_location) = warehouse.get_neighbour(robot_coord, *direction) else {
             continue;
         };
-        println!(
-            "Robot: {robot_coord}, {direction} - Next value: {:#?}, Next coord: {}",
-            &next_location.value, next_location.location
-        );
         match next_location.value {
             LocContents::Wall => continue,
             LocContents::Box | LocContents::BoxLeft | LocContents::BoxRight => {
-                println!(
-                    "Pushing {:#?} at {:#?} going {:#?}",
-                    next_location.value, next_location.location, direction
-                );
                 if let Some(push_results) =
                     push_result(warehouse, &next_location.location, *direction)
                 {
-                    dbg!(&push_results);
                     robot_coord = next_location.location;
                     let next_value = *next_location.value;
                     for (coord, value) in push_results {
@@ -74,7 +65,6 @@ fn traverse_warehouse(
                         }
                     }
                 }
-                println!("{warehouse}");
             }
             LocContents::Empty => robot_coord = next_location.location,
             _ => panic!(),
@@ -83,7 +73,6 @@ fn traverse_warehouse(
 
     println!("Final warehouse!");
     println!("{warehouse}");
-    dbg!(warehouse.find_all(score_item).collect::<Vec<_>>());
     // Calculate the GPS sums
     warehouse
         .find_all(score_item)
@@ -96,6 +85,30 @@ fn push_result(
     coord: &Coordinate,
     direction: Direction,
 ) -> Option<HashMap<Coordinate, LocContents>> {
+    let changed_cells = changed_cells(warehouse, coord, direction)?;
+
+    let mut cell_updates = HashMap::new();
+    for changed_cell in &changed_cells {
+        let behind = warehouse
+            .get_neighbour(*changed_cell, direction.get_opposite())
+            .unwrap();
+
+        if changed_cells.contains(&behind.location) {
+            cell_updates.insert(*changed_cell, *behind.value);
+        } else {
+            cell_updates.insert(*changed_cell, LocContents::Empty);
+        }
+    }
+
+    Some(cell_updates)
+}
+
+// Returns a hashset of coordinates which change in the push
+fn changed_cells(
+    warehouse: &Grid<LocContents>,
+    coord: &Coordinate,
+    direction: Direction,
+) -> Option<HashSet<Coordinate>> {
     let current_value = warehouse.get(*coord);
     match current_value {
         // If it's a wall, then we want to return None because nothing moves
@@ -105,11 +118,8 @@ fn push_result(
             let neighbour_coord = warehouse.get_neighbour(*coord, direction).unwrap().location;
 
             // Try pushing the neighbour, if we get Some back then we know we can push this as well
-            if let Some(mut results) = push_result(warehouse, &neighbour_coord, direction) {
-                let behind = warehouse
-                    .get_neighbour(*coord, direction.get_opposite())
-                    .unwrap();
-                results.insert(*coord, *behind.value);
+            if let Some(mut results) = changed_cells(warehouse, &neighbour_coord, direction) {
+                results.insert(*coord);
                 Some(results)
             } else {
                 None
@@ -122,12 +132,8 @@ fn push_result(
             let neighbour_coord = warehouse.get_neighbour(*coord, direction).unwrap().location;
 
             // Try pushing the neighbour, if we get Some back then we know we can push this as well
-            let mut results = push_result(warehouse, &neighbour_coord, direction)?;
-
-            let behind = warehouse
-                .get_neighbour(*coord, direction.get_opposite())
-                .unwrap();
-            results.insert(*coord, *behind.value);
+            let mut results = changed_cells(warehouse, &neighbour_coord, direction)?;
+            results.insert(*coord);
 
             // We only do the horrible cascade if pushing north or south, otherwise the larger boxes behave like boxes
             if direction == Direction::North || direction == Direction::South {
@@ -154,27 +160,16 @@ fn push_result(
 
                 // Get the results of if we push other half's neighbour
                 let other_half_results =
-                    push_result(warehouse, &other_half_neighbour.location, direction)?;
+                    changed_cells(warehouse, &other_half_neighbour.location, direction)?;
 
                 results.extend(other_half_results.iter());
-
-                let behind_other_half = warehouse
-                    .get_neighbour(other_half.location, direction.get_opposite())
-                    .unwrap();
-
-                results.insert(other_half.location, *behind_other_half.value);
-                results.insert(other_half_neighbour.location, *other_half.value);
+                results.insert(other_half.location);
             }
 
             Some(results)
         }
         // If the current space is empty, then we return Some() and move the space behind us into this space
-        LocContents::Empty => {
-            let behind = warehouse
-                .get_neighbour(*coord, direction.get_opposite())
-                .unwrap();
-            Some(HashMap::from([(*coord, *behind.value)]))
-        }
+        LocContents::Empty => Some(HashSet::from([*coord])),
     }
 }
 
@@ -315,6 +310,173 @@ mod tests {
         assert_eq!(
             traverse_warehouse(&mut warehouse, &directions, &LocContents::BoxLeft),
             618
+        );
+    }
+
+    #[test]
+    fn part_2_test_3() {
+        let input = "#####
+#...#
+#.O@#
+#OO.#
+#O#.#
+#...#
+#####
+
+<^<<v";
+        let input = get_part_2_input(input);
+
+        let (mut warehouse, directions) = parse_input(&input);
+        assert_eq!(
+            traverse_warehouse(&mut warehouse, &directions, &LocContents::BoxLeft),
+            1211
+        );
+    }
+
+    #[test]
+    fn part_2_test_4() {
+        let input = "#####
+#...#
+#.O@#
+#OO.#
+##O.#
+#...#
+#####
+
+<^<<v";
+        let input = get_part_2_input(input);
+
+        let (mut warehouse, directions) = parse_input(&input);
+        assert_eq!(
+            traverse_warehouse(&mut warehouse, &directions, &LocContents::BoxLeft),
+            1213
+        );
+    }
+
+    #[test]
+    fn part_2_test_5() {
+        let input = "#######
+#.....#
+#.OO@.#
+#.....#
+#######
+
+<<";
+        let input = get_part_2_input(input);
+
+        let (mut warehouse, directions) = parse_input(&input);
+        assert_eq!(
+            traverse_warehouse(&mut warehouse, &directions, &LocContents::BoxLeft),
+            406
+        );
+    }
+
+    #[test]
+    fn part_2_test_6() {
+        let input = "#######
+#.....#
+#.O#..#
+#..O@.#
+#.....#
+#######
+
+<v<<^";
+        let input = get_part_2_input(input);
+
+        let (mut warehouse, directions) = parse_input(&input);
+        assert_eq!(
+            traverse_warehouse(&mut warehouse, &directions, &LocContents::BoxLeft),
+            509
+        );
+    }
+
+    #[test]
+    fn part_2_test_7() {
+        let input = "######
+#....#
+#..#.#
+#....#
+#.O..#
+#.OO@#
+#.O..#
+#....#
+######
+
+<vv<<^^^";
+        let input = get_part_2_input(input);
+
+        let (mut warehouse, directions) = parse_input(&input);
+        println!("{}", warehouse);
+        assert_eq!(
+            traverse_warehouse(&mut warehouse, &directions, &LocContents::BoxLeft),
+            1216
+        );
+    }
+
+    #[test]
+    fn part_2_test_8() {
+        let input = "########
+#......#
+#OO....#
+#.O....#
+#.O....#
+##O....#
+#O..O@.#
+#......#
+########
+
+<^^<<>^^^<v";
+        let input = get_part_2_input(input);
+
+        let (mut warehouse, directions) = parse_input(&input);
+        println!("{}", warehouse);
+        assert_eq!(
+            traverse_warehouse(&mut warehouse, &directions, &LocContents::BoxLeft),
+            2827
+        );
+    }
+
+    #[test]
+    fn part_2_test_9() {
+        let input = "#######
+#.....#
+#.....#
+#.@O..#
+#..#O.#
+#...O.#
+#..O..#
+#.....#
+#######
+
+>><vvv>v>^^^";
+        let input = get_part_2_input(input);
+
+        let (mut warehouse, directions) = parse_input(&input);
+        println!("{}", warehouse);
+        assert_eq!(
+            traverse_warehouse(&mut warehouse, &directions, &LocContents::BoxLeft),
+            1430
+        );
+    }
+
+    #[test]
+    fn part_2_test_10() {
+        let input = "#######
+#.....#
+#.O.O@#
+#..O..#
+#..O..#
+#.....#
+#######
+
+<v<<>vv<^^";
+        let input = get_part_2_input(input);
+
+        let (mut warehouse, directions) = parse_input(&input);
+        println!("{}", warehouse);
+        assert_eq!(
+            traverse_warehouse(&mut warehouse, &directions, &LocContents::BoxLeft),
+            822
         );
     }
 }
