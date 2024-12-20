@@ -109,7 +109,7 @@ impl<T> Grid<T> {
         coord.x < self.row_len && coord.y < self.row_count
     }
 
-    pub fn indexed_iter(&self) -> impl Iterator<Item = (Coordinate, &T)> {
+    pub fn indexed_iter(&self) -> impl Iterator<Item = (Coordinate, &T)> + Clone {
         self.data.iter().enumerate().map(move |(idx, i)| {
             let position = self.index_to_coord(idx);
             (position, i)
@@ -205,6 +205,7 @@ where
     }
 }
 
+#[derive(Clone)]
 pub struct Neighbour<'a, T> {
     pub value: &'a T,
     pub location: Coordinate,

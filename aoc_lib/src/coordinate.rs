@@ -14,7 +14,7 @@ impl Coordinate {
         Coordinate { x, y }
     }
 
-    pub fn get_distance(&self, other: Self) -> usize {
+    pub fn get_manhattan_distance(&self, other: Self) -> usize {
         self.x.abs_diff(other.x) + self.y.abs_diff(other.y)
     }
 
