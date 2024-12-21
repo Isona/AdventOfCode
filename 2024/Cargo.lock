@@ -246,6 +246,7 @@ dependencies = [
  "aoc_lib",
  "cached",
  "itertools",
+ "petgraph",
 ]
 
 [[package]]

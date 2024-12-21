@@ -1,21 +1,22 @@
 use core::fmt;
 use std::fmt::Display;
 
-use aoc_lib::Coordinate;
+use aoc_lib::{Coordinate, Direction, Grid};
 use cached::proc_macro::cached;
 use itertools::Itertools;
+use petgraph::{algo::all_simple_paths, graphmap::DiGraphMap, prelude::GraphMap};
 
 const INPUT: &str = include_str!("input.txt");
 
 fn main() {
     let start = std::time::Instant::now();
-    let part_1_answer = part_1(&INPUT);
+    let part_1_answer = part_1(INPUT);
 
     let time_taken = start.elapsed().as_secs_f32() * 1000.0;
     println!("Part 1: {part_1_answer} in {time_taken:.3} ms");
 
     let start = std::time::Instant::now();
-    let part_2_answer = part_2(&INPUT);
+    let part_2_answer = part_2(INPUT);
 
     let time_taken = start.elapsed().as_secs_f32() * 1000.0;
     println!("Part 2: {part_2_answer} in {time_taken:.3} ms");
@@ -23,8 +24,8 @@ fn main() {
 
 // 184712 is too high
 fn part_1(input: &str) -> u64 {
-    let numeric_keypad = get_num_keypad();
-    let directional_keypad = get_directional_keypad();
+    let numeric_keypad = NumericKeypad::new();
+    let directional_keypad = DirectionalKeypad::new();
 
     let mut output = 0;
     for line in input.lines() {
@@ -82,81 +83,173 @@ fn get_next_buttons(
     buttons
 }
 
-fn get_num_keypad() -> Vec<Coordinate> {
-    // Top row
-    let coord_7 = Coordinate::new(0, 0);
-    let coord_8 = Coordinate::new(1, 0);
-    let coord_9 = Coordinate::new(2, 0);
-
-    // Second row
-    let coord_4 = Coordinate::new(0, 1);
-    let coord_5 = Coordinate::new(1, 1);
-    let coord_6 = Coordinate::new(2, 1);
-
-    // Third row
-
-    let coord_1 = Coordinate::new(0, 2);
-    let coord_2 = Coordinate::new(1, 2);
-    let coord_3 = Coordinate::new(2, 2);
-
-    // Fourth row
-    let coord_0 = Coordinate::new(1, 3);
-    let coord_a = Coordinate::new(2, 3);
-
-    Vec::from([
-        coord_0, coord_1, coord_2, coord_3, coord_4, coord_5, coord_6, coord_7, coord_8, coord_9,
-        coord_a,
-    ])
+// Wrapper for caching
+#[cached(key = "String", convert = r#"{ format!("{start},{end}") }"#)]
+fn get_numeric_paths(
+    numeric_keypad: &NumericKeypad,
+    start: u32,
+    end: u32,
+) -> Vec<Vec<KeypadDirection>> {
+    numeric_keypad.get_paths(start, end)
 }
 
-#[cached]
-fn get_directions(
-    start_coord: Coordinate,
-    end_coord: Coordinate,
-    is_num_keypad: bool,
-) -> Vec<KeypadDirection> {
-    let mut output = Vec::new();
-
-    let prioritise_left = is_num_keypad && (start_coord.y != 3 || end_coord.x != 0);
-    if prioritise_left {
-        for _ in 0..start_coord.x.saturating_sub(end_coord.x) {
-            output.push(KeypadDirection::Left)
-        }
-    }
-
-    // Prioritise right
-    for _ in 0..end_coord.x.saturating_sub(start_coord.x) {
-        output.push(KeypadDirection::Right);
-    }
-
-    // Prioritise down
-    for _ in 0..end_coord.y.saturating_sub(start_coord.y) {
-        output.push(KeypadDirection::Down);
-    }
-
-    // Up
-    for _ in 0..start_coord.y.saturating_sub(end_coord.y) {
-        output.push(KeypadDirection::Up)
-    }
-
-    // Left
-    if !prioritise_left {
-        for _ in 0..start_coord.x.saturating_sub(end_coord.x) {
-            output.push(KeypadDirection::Left)
-        }
-    }
-
-    output.push(KeypadDirection::A);
-    output
+// Wrapper for caching
+#[cached(key = "String", convert = r#"{ format!("{start},{end}") }"#)]
+fn get_directional_paths(
+    directional_keypad: &DirectionalKeypad,
+    start: KeypadDirection,
+    end: KeypadDirection,
+) -> Vec<Vec<KeypadDirection>> {
+    directional_keypad.get_paths(start, end)
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+struct NumericKeypad {
+    grid: Grid<u32>,
+    graph: DiGraphMap<Coordinate, KeypadDirection>,
+}
+
+impl NumericKeypad {
+    fn new() -> Self {
+        let mut grid = Grid::new();
+        grid.push_row(Vec::from([7, 8, 9]));
+        grid.push_row(Vec::from([4, 5, 6]));
+        grid.push_row(Vec::from([1, 2, 3]));
+        grid.push_row(Vec::from([11, 0, 10]));
+
+        let mut graph = DiGraphMap::new();
+        for (coord, value) in grid.indexed_iter() {
+            if value == &11 {
+                continue;
+            }
+
+            for neighbour in grid
+                .get_cardinal_neighbours(coord)
+                .filter(|x| x.value != &11)
+            {
+                graph.add_edge(
+                    coord,
+                    neighbour.location,
+                    KeypadDirection::from(neighbour.direction),
+                );
+            }
+        }
+
+        Self { grid, graph }
+    }
+
+    fn get_paths(&self, start: u32, end: u32) -> Vec<Vec<KeypadDirection>> {
+        let start_coord = self.grid.find_item(&start).unwrap();
+        let end_coord = self.grid.find_item(&end).unwrap();
+        let manhattan = start_coord.get_manhattan_distance(end_coord);
+
+        let paths: Vec<Vec<Coordinate>> = all_simple_paths::<Vec<_>, _>(
+            &self.graph,
+            start_coord,
+            end_coord,
+            manhattan - 1,
+            Some(manhattan - 1),
+        )
+        .collect();
+
+        let mut direction_lists = Vec::new();
+
+        for path in paths {
+            direction_lists.push(
+                path.iter()
+                    .tuple_windows()
+                    .map(|(coord_1, coord_2)| {
+                        KeypadDirection::from(coord_1.get_direction_to(coord_2).unwrap())
+                    })
+                    .collect(),
+            );
+        }
+
+        direction_lists
+    }
+}
+
+struct DirectionalKeypad {
+    grid: Grid<u32>,
+    graph: DiGraphMap<Coordinate, KeypadDirection>,
+}
+
+impl DirectionalKeypad {
+    fn new() -> Self {
+        let mut grid = Grid::new();
+        grid.push_row(Vec::from([11, 0, 4]));
+        grid.push_row(Vec::from([2, 1, 3]));
+
+        let mut graph = DiGraphMap::new();
+        for (coord, value) in grid.indexed_iter() {
+            if value == &11 {
+                continue;
+            }
+
+            for neighbour in grid
+                .get_cardinal_neighbours(coord)
+                .filter(|x| x.value != &11)
+            {
+                graph.add_edge(
+                    coord,
+                    neighbour.location,
+                    KeypadDirection::from(neighbour.direction),
+                );
+            }
+        }
+
+        Self { grid, graph }
+    }
+
+    fn get_paths(&self, start: KeypadDirection, end: KeypadDirection) -> Vec<Vec<KeypadDirection>> {
+        let start_coord = self.grid.find_item(&(start as u32)).unwrap();
+        let end_coord = self.grid.find_item(&(end as u32)).unwrap();
+        let manhattan = start_coord.get_manhattan_distance(end_coord);
+
+        let paths: Vec<Vec<Coordinate>> = all_simple_paths::<Vec<_>, _>(
+            &self.graph,
+            start_coord,
+            end_coord,
+            manhattan - 1,
+            Some(manhattan - 1),
+        )
+        .collect();
+
+        let mut direction_lists = Vec::new();
+
+        for path in paths {
+            direction_lists.push(
+                path.iter()
+                    .tuple_windows()
+                    .map(|(coord_1, coord_2)| {
+                        KeypadDirection::from(coord_1.get_direction_to(coord_2).unwrap())
+                    })
+                    .collect(),
+            );
+        }
+
+        direction_lists
+    }
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
 enum KeypadDirection {
     Up = 0,
     Down = 1,
     Left = 2,
     Right = 3,
     A = 4,
+}
+
+impl From<Direction> for KeypadDirection {
+    fn from(value: Direction) -> Self {
+        match value {
+            Direction::North => Self::Up,
+            Direction::South => Self::Down,
+            Direction::East => Self::Right,
+            Direction::West => Self::Left,
+            _ => panic!(),
+        }
+    }
 }
 
 impl Display for KeypadDirection {
@@ -188,7 +281,7 @@ mod tests {
 
     #[test]
     fn part_1_test() {
-        assert_eq!(part_1(&TESTINPUT), 7);
+        assert_eq!(part_1(&TESTINPUT), 126384);
     }
 
     #[test]
@@ -197,70 +290,17 @@ mod tests {
     }
 
     #[test]
-    fn numeric_keypad_distance_test() {
-        let keypad = get_num_keypad();
+    fn num_keypad_get_paths_test() {
+        let keypad = NumericKeypad::new();
+        let paths = keypad.get_paths(0, 7);
+        println!("{paths:#?}");
+        assert_eq!(paths.len(), 3);
+    }
 
-        // Go from button 0 to 1, should be Up, Left, A
-        let directions = get_directions(keypad[0], keypad[1], true);
-        assert_eq!(
-            directions,
-            Vec::from([
-                KeypadDirection::Up,
-                KeypadDirection::Left,
-                KeypadDirection::A
-            ])
-        );
-
-        // Go from button 2 to button 9, should be Right, Up Up, A
-        let directions = get_directions(keypad[2], keypad[9], true);
-        assert_eq!(
-            directions,
-            Vec::from([
-                KeypadDirection::Right,
-                KeypadDirection::Up,
-                KeypadDirection::Up,
-                KeypadDirection::A
-            ])
-        );
-
-        // Go from button 9 to button A, should be Down, Down, Down A
-        let directions = get_directions(keypad[9], keypad[10], true);
-        assert_eq!(
-            directions,
-            Vec::from([
-                KeypadDirection::Down,
-                KeypadDirection::Down,
-                KeypadDirection::Down,
-                KeypadDirection::A
-            ])
-        );
-
-        // Go from button A to button A, should be just A
-        let directions = get_directions(keypad[10], keypad[10], true);
-        assert_eq!(directions, Vec::from([KeypadDirection::A]));
-
-        // Go from button 3 to 7, should get Left, Left, Up, Up A
-        let directions = get_directions(keypad[3], keypad[7], true);
-        assert_eq!(
-            directions,
-            Vec::from([
-                KeypadDirection::Left,
-                KeypadDirection::Left,
-                KeypadDirection::Up,
-                KeypadDirection::Up,
-                KeypadDirection::A
-            ])
-        );
-
-        // Go from button A to 2, should get Left, Up, A
-        let directions = get_directions(keypad[10], keypad[2], true);
-        assert_eq!(
-            directions,
-            Vec::from([
-                KeypadDirection::Left,
-                KeypadDirection::Up,
-                KeypadDirection::A
-            ])
-        );
+    #[test]
+    fn dir_keypad_get_paths_test() {
+        let dir_keypad = DirectionalKeypad::new();
+        let paths = dir_keypad.get_paths(KeypadDirection::A, KeypadDirection::Left);
+        assert_eq!(paths.len(), 2);
     }
 }

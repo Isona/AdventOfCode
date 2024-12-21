@@ -1,7 +1,7 @@
 use core::fmt;
 use std::ops::Mul;
 
-use crate::vector::Vector;
+use crate::{vector::Vector, Direction};
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy, Hash, Default)]
 pub struct Coordinate {
@@ -34,6 +34,27 @@ impl Coordinate {
             .checked_add_signed(vector.y.checked_neg().unwrap().try_into().unwrap())?;
 
         Some(Coordinate { x, y })
+    }
+
+    pub fn get_direction_to(&self, other: &Self) -> Option<Direction> {
+        if self == other {
+            return None;
+        }
+        if self.x == other.x {
+            if self.y > other.y {
+                return Some(Direction::North);
+            } else {
+                return Some(Direction::South);
+            }
+        } else if self.y == other.y {
+            if self.x > other.x {
+                return Some(Direction::West);
+            } else {
+                return Some(Direction::East);
+            }
+        }
+
+        None
     }
 }
 
