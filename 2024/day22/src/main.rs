@@ -1,4 +1,7 @@
-use std::ops::{Shl, Shr};
+use std::{
+    collections::HashMap,
+    ops::{Shl, Shr},
+};
 
 const INPUT: &str = include_str!("input.txt");
 
@@ -32,8 +35,7 @@ fn part_1(input: &[u64]) -> u64 {
 }
 
 fn part_2(input: &[u64]) -> i32 {
-    let mut vendor_patterns = Vec::new();
-    let mut vendor_digits = Vec::new();
+    let mut vendor_patterns: Vec<HashMap<Vec<i32>, i32>> = Vec::new();
 
     for value in input {
         let mut current = *value;
@@ -50,11 +52,16 @@ fn part_2(input: &[u64]) -> i32 {
             digits.push(digit);
         }
 
-        assert_eq!(digits.len(), 2001);
-        // println!("{differences:?}");
+        let mut hashmap = HashMap::new();
+        for (diffs, bananas) in differences
+            .windows(4)
+            .enumerate()
+            .map(|(index, diffs)| (Vec::from(diffs), digits[index + 3]))
+        {
+            hashmap.entry(diffs).or_insert(bananas);
+        }
 
-        vendor_digits.push(digits);
-        vendor_patterns.push(differences);
+        vendor_patterns.push(hashmap);
     }
 
     let patterns = generate_valid_difference_patterns();
@@ -62,13 +69,9 @@ fn part_2(input: &[u64]) -> i32 {
     let mut max_bananas = 0;
     for pattern in patterns {
         let mut current_banana_count = 0;
-        for (vendor_index, vendor_pattern) in vendor_patterns.iter().enumerate() {
-            if let Some((index, _)) = vendor_pattern
-                .windows(4)
-                .enumerate()
-                .find(|x| *x.1 == pattern)
-            {
-                current_banana_count += vendor_digits[vendor_index][index + 3];
+        for vendor_pattern in &vendor_patterns {
+            if let Some(bananas) = vendor_pattern.get(&pattern) {
+                current_banana_count += bananas;
             }
         }
         max_bananas = max_bananas.max(current_banana_count);
