@@ -1,7 +1,5 @@
-use std::{
-    collections::HashMap,
-    ops::{Shl, Shr},
-};
+use rustc_hash::FxHashMap as HashMap;
+use std::ops::{Shl, Shr};
 
 const INPUT: &str = include_str!("input.txt");
 
@@ -35,7 +33,7 @@ fn part_1(input: &[u64]) -> u64 {
 }
 
 fn part_2(input: &[u64]) -> i32 {
-    let mut vendor_patterns: Vec<HashMap<Vec<i32>, i32>> = Vec::new();
+    let mut vendor_patterns: Vec<HashMap<i32, i32>> = Vec::new();
 
     for value in input {
         let mut current = *value;
@@ -52,11 +50,11 @@ fn part_2(input: &[u64]) -> i32 {
             digits.push(digit);
         }
 
-        let mut hashmap = HashMap::new();
+        let mut hashmap = HashMap::default();
         for (diffs, bananas) in differences
             .windows(4)
             .enumerate()
-            .map(|(index, diffs)| (Vec::from(diffs), digits[index + 3]))
+            .map(|(index, diffs)| (banana_hash(diffs), digits[index + 3]))
         {
             hashmap.entry(diffs).or_insert(bananas);
         }
@@ -92,7 +90,7 @@ fn get_next_secret(mut value: u64) -> u64 {
     value
 }
 
-fn generate_valid_difference_patterns() -> Vec<Vec<i32>> {
+fn generate_valid_difference_patterns() -> Vec<i32> {
     let mut patterns = Vec::new();
     for first in -9..=9 {
         for second in -9..=9 {
@@ -113,12 +111,23 @@ fn generate_valid_difference_patterns() -> Vec<Vec<i32>> {
                         // This is invalid
                         continue;
                     }
-                    patterns.push(Vec::from([first, second, third, fourth]));
+                    patterns.push(banana_hash(&[first, second, third, fourth]));
                 }
             }
         }
     }
     patterns
+}
+
+fn banana_hash(input: &[i32]) -> i32 {
+    assert_eq!(input.len(), 4);
+    let mut output = 0;
+    for i in input {
+        output += 10 - i;
+        output <<= 5;
+    }
+
+    output
 }
 
 fn parse_input(input: &str) -> Vec<u64> {

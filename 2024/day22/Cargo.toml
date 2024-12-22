@@ -5,3 +5,4 @@ edition = "2024"
 
 [dependencies]
 cached = "0.54.0"
+rustc-hash = "2.1.0"
