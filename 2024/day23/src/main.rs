@@ -28,7 +28,7 @@ fn part_1(graph: &UnGraphMap<&str, i32>) -> usize {
     // Get all the nodes in the graph starting with `t``
     for start_node in graph.nodes().filter(|pc_name| pc_name.starts_with('t')) {
         // Iterate over its neighbours
-        let start_node_neighbours = graph.neighbors(start_node).collect_vec();
+        let start_node_neighbours: HashSet<&str> = graph.neighbors(start_node).collect();
         for second_node in graph.neighbors(start_node) {
             let second_node_neighbours = graph.neighbors(second_node);
             // Find possible third nodes by getting the intersection of the neighbours of nodes 1 and 2
@@ -48,45 +48,44 @@ fn part_1(graph: &UnGraphMap<&str, i32>) -> usize {
 }
 
 fn part_2(graph: &UnGraphMap<&str, i32>) -> String {
-    let mut max_graph = Vec::new();
-
-    for node in graph.nodes() {
-        let neighbours = graph.neighbors(node).collect_vec();
-        let candidate_graph = find_fully_connected(graph, vec![node], neighbours);
-        if candidate_graph.len() > max_graph.len() {
-            max_graph = candidate_graph;
-        }
-    }
-
+    let nodes = graph.nodes().map(|x| x.to_string()).collect();
+    let max_graph = bron_kerbosch(graph, HashSet::new(), nodes, HashSet::new());
+    let mut max_graph = max_graph.iter().collect_vec();
     max_graph.sort();
     max_graph.iter().join(",")
 }
 
-fn find_fully_connected<'a>(
-    graph: &'a UnGraphMap<&'a str, i32>,
-    nodes: Vec<&'a str>,
-    neighbours_intersection: Vec<&'a str>,
-) -> Vec<&'a str> {
-    if neighbours_intersection.is_empty() {
-        return nodes.to_vec();
+fn bron_kerbosch(
+    graph: &UnGraphMap<&str, i32>,
+    r: HashSet<String>,
+    p: HashSet<String>,
+    mut x: HashSet<String>,
+) -> HashSet<String> {
+    if p.is_empty() && x.is_empty() {
+        return r;
     }
+    let mut max_set = HashSet::new();
+    let mut child_p = p.clone();
 
-    let mut largest_graph = Vec::new();
-    for candidate_node in &neighbours_intersection {
-        let candidate_intersection = graph
-            .neighbors(candidate_node)
-            .filter(|node| neighbours_intersection.contains(node))
-            .collect_vec();
-        let mut candidate_nodes = nodes.clone();
-        candidate_nodes.push(candidate_node);
+    for vertex in p {
+        let vertex_neighbours: HashSet<String> =
+            graph.neighbors(&vertex).map(|x| x.to_string()).collect();
+        let vertex_hashset = HashSet::from([vertex.clone()]);
+        let max_clique = bron_kerbosch(
+            graph,
+            r.union(&vertex_hashset).cloned().collect(),
+            child_p.intersection(&vertex_neighbours).cloned().collect(),
+            x.intersection(&vertex_neighbours).cloned().collect(),
+        );
 
-        let candidate_graph = find_fully_connected(graph, candidate_nodes, candidate_intersection);
-        if candidate_graph.len() > largest_graph.len() {
-            largest_graph = candidate_graph;
+        if max_clique.len() > max_set.len() {
+            max_set = max_clique;
         }
+        child_p.remove(&vertex);
+        x.insert(vertex);
     }
 
-    largest_graph
+    max_set
 }
 
 fn parse_input(input: &str) -> UnGraphMap<&str, i32> {
