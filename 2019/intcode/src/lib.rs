@@ -6,20 +6,22 @@ pub struct IntCodePC {
     pc: usize, // Program Counter
     input: VecDeque<i128>,
     output: VecDeque<i128>,
+    initial_data: Vec<i128>,
 }
 
 impl IntCodePC {
     pub fn new(program_input: &str) -> Self {
-        let data = program_input
+        let data: Vec<i128> = program_input
             .trim()
             .split(',')
             .map(|x| x.parse().unwrap())
             .collect();
         Self {
-            data,
+            data: data.clone(),
             pc: 0,
             input: VecDeque::default(),
             output: VecDeque::default(),
+            initial_data: data,
         }
     }
 
@@ -53,6 +55,42 @@ impl IntCodePC {
                     self.output.push_back(output_value);
                     self.pc += 2;
                 }
+                IntCodeInstructionType::JumpIfTrue => {
+                    if self.get_operand(&next_instruction, 1) != 0 {
+                        self.pc = usize::try_from(self.get_operand(&next_instruction, 2)).unwrap();
+                    } else {
+                        self.pc += 3;
+                    }
+                }
+                IntCodeInstructionType::JumpIfFalse => {
+                    if self.get_operand(&next_instruction, 1) == 0 {
+                        self.pc = usize::try_from(self.get_operand(&next_instruction, 2)).unwrap();
+                    } else {
+                        self.pc += 3;
+                    }
+                }
+                IntCodeInstructionType::LessThan => {
+                    let operand_1 = self.get_operand(&next_instruction, 1);
+                    let operand_2 = self.get_operand(&next_instruction, 2);
+                    let destination = usize::try_from(self.data[self.pc + 3]).unwrap();
+                    if operand_1 < operand_2 {
+                        self.data[destination] = 1;
+                    } else {
+                        self.data[destination] = 0;
+                    }
+                    self.pc += 4;
+                }
+                IntCodeInstructionType::Equals => {
+                    let operand_1 = self.get_operand(&next_instruction, 1);
+                    let operand_2 = self.get_operand(&next_instruction, 2);
+                    let destination = usize::try_from(self.data[self.pc + 3]).unwrap();
+                    if operand_1 == operand_2 {
+                        self.data[destination] = 1;
+                    } else {
+                        self.data[destination] = 0;
+                    }
+                    self.pc += 4;
+                }
                 IntCodeInstructionType::Halt => break,
             }
 
@@ -78,6 +116,13 @@ impl IntCodePC {
 
     pub fn reset_pc(&mut self) {
         self.pc = 0;
+    }
+
+    pub fn reset_all(&mut self) {
+        self.data = self.initial_data.clone();
+        self.pc = 0;
+        self.output = VecDeque::new();
+        self.input = VecDeque::new();
     }
 
     pub fn set_input(&mut self, new_input: VecDeque<i128>) {
@@ -114,6 +159,10 @@ pub enum IntCodeInstructionType {
     Mul = 2,
     Input = 3,
     Output = 4,
+    JumpIfTrue = 5,
+    JumpIfFalse = 6,
+    LessThan = 7,
+    Equals = 8,
     Halt = 99,
 }
 
@@ -126,6 +175,10 @@ impl TryFrom<i128> for IntCodeInstructionType {
             2 => Ok(Self::Mul),
             3 => Ok(Self::Input),
             4 => Ok(Self::Output),
+            5 => Ok(Self::JumpIfTrue),
+            6 => Ok(Self::JumpIfFalse),
+            7 => Ok(Self::LessThan),
+            8 => Ok(Self::Equals),
             99 => Ok(Self::Halt),
             _ => Err(()),
         }
@@ -173,5 +226,35 @@ mod tests {
         let output = pc.get_output();
         assert_eq!(output.len(), 1);
         assert_eq!(output[0], 1162)
+    }
+
+    #[test]
+    fn test_jumps() {
+        // Should output 0 if input was 0, and 1 otherwise
+        //Position mode
+        let mut pc = IntCodePC::new("3,12,6,12,15,1,13,14,13,4,13,99,-1,0,1,9");
+        pc.set_input(VecDeque::from([1162]));
+        pc.run_program();
+        let output = pc.get_output();
+        assert_eq!(output[0], 1);
+
+        pc.reset_all();
+        pc.set_input(VecDeque::from([0]));
+        pc.run_program();
+        let output = pc.get_output();
+        assert_eq!(output[0], 0);
+
+        //Immediate mode
+        let mut pc = IntCodePC::new("3,3,1105,-1,9,1101,0,0,12,4,12,99,1");
+        pc.set_input(VecDeque::from([1162]));
+        pc.run_program();
+        let output = pc.get_output();
+        assert_eq!(output[0], 1);
+
+        pc.reset_all();
+        pc.set_input(VecDeque::from([0]));
+        pc.run_program();
+        let output = pc.get_output();
+        assert_eq!(output[0], 0);
     }
 }

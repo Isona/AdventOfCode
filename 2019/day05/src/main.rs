@@ -14,13 +14,12 @@ fn main() {
     let time_taken = start.elapsed().as_secs_f32() * 1000.0;
     println!("Part 1: {part_1_answer} in {time_taken:.3} ms");
 
+    pc.reset_all();
+    pc.set_input(VecDeque::from([5]));
     let start = std::time::Instant::now();
-    //let part_2_answer = part_2(&input);
+    pc.run_program();
+    let part_2_answer = pc.get_output().pop_front().unwrap();
 
     let time_taken = start.elapsed().as_secs_f32() * 1000.0;
-    //println!("Part 2: {part_2_answer} in {time_taken:.3} ms");
-}
-
-fn part_2(input: &[u64]) -> u64 {
-    todo!();
+    println!("Part 2: {part_2_answer} in {time_taken:.3} ms");
 }
