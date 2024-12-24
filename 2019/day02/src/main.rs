@@ -20,7 +20,7 @@ fn main() {
     println!("Part 2: {part_2_answer} in {time_taken:.3} ms");
 }
 
-fn part_2(initial_pc: &IntCodePC) -> usize {
+fn part_2(initial_pc: &IntCodePC) -> i128 {
     for x in 0..100 {
         for y in 0..100 {
             let mut pc = initial_pc.clone();
@@ -45,10 +45,4 @@ mod tests {
         let mut pc = IntCodePC::new(TESTINPUT);
         assert_eq!(pc.run_program(), 3500);
     }
-
-    // #[test]
-    // fn part_2_test() {
-    //     let input = parse_input(TESTINPUT);
-    //     assert_eq!(part_2(&input), 5);
-    // }
 }
