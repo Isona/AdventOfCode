@@ -242,10 +242,6 @@ impl Calculation {
     fn has_input(&self, wire: &str) -> bool {
         wire == self.op1 || wire == self.op2
     }
-
-    fn inputs_match(&self, wire_1: &str, wire_2: &str) -> bool {
-        (wire_1 == self.op1 || wire_1 == self.op2) && (wire_2 == self.op1 || wire_2 == self.op2)
-    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
