@@ -25,7 +25,7 @@ impl IntCodePC {
         }
     }
 
-    pub fn run_program(&mut self) -> i128 {
+    pub fn run_program(&mut self) -> IntCodeProgramState {
         let mut next_instruction = IntCodeInstruction::new(self.data[self.pc]);
 
         while next_instruction.instruction_type != IntCodeInstructionType::Halt {
@@ -45,9 +45,12 @@ impl IntCodePC {
                     self.pc += 4;
                 }
                 IntCodeInstructionType::Input => {
+                    let Some(input_data) = self.input.pop_front() else {
+                        return IntCodeProgramState::NeedsInput;
+                    };
+
                     let destination = self.data[self.pc + 1];
-                    self.data[usize::try_from(destination).unwrap()] =
-                        self.input.pop_front().unwrap();
+                    self.data[usize::try_from(destination).unwrap()] = input_data;
                     self.pc += 2;
                 }
                 IntCodeInstructionType::Output => {
@@ -91,13 +94,13 @@ impl IntCodePC {
                     }
                     self.pc += 4;
                 }
-                IntCodeInstructionType::Halt => break,
+                IntCodeInstructionType::Halt => unreachable!(),
             }
 
             next_instruction = IntCodeInstruction::new(self.data[self.pc]);
         }
 
-        self.data[0]
+        return IntCodeProgramState::Halted;
     }
 
     fn get_operand(&self, instruction: &IntCodeInstruction, index: usize) -> i128 {
@@ -131,6 +134,14 @@ impl IntCodePC {
 
     pub fn get_output(&self) -> VecDeque<i128> {
         self.output.clone()
+    }
+
+    pub fn take_output(&mut self) -> VecDeque<i128> {
+        std::mem::take(&mut self.output)
+    }
+
+    pub fn get_data(&self, index: usize) -> Option<i128> {
+        self.data.get(index).copied()
     }
 }
 
@@ -202,6 +213,12 @@ impl TryFrom<i128> for ParameterMode {
     }
 }
 
+#[derive(PartialEq, Eq, Debug, Hash)]
+pub enum IntCodeProgramState {
+    Halted,
+    NeedsInput,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -209,13 +226,15 @@ mod tests {
     #[test]
     fn test_add() {
         let mut pc = IntCodePC::new("1,4,2,0,99");
-        assert_eq!(pc.run_program(), 101);
+        assert_eq!(pc.run_program(), IntCodeProgramState::Halted);
+        assert_eq!(pc.get_data(0), Some(101));
     }
 
     #[test]
     fn test_mul() {
         let mut pc = IntCodePC::new("2,4,2,0,99");
-        assert_eq!(pc.run_program(), 198);
+        assert_eq!(pc.run_program(), IntCodeProgramState::Halted);
+        assert_eq!(pc.get_data(0), Some(198));
     }
 
     #[test]

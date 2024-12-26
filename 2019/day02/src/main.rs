@@ -1,4 +1,4 @@
-use intcode::IntCodePC;
+use intcode::{IntCodePC, IntCodeProgramState};
 const INPUT: &str = include_str!("input.txt");
 
 fn main() {
@@ -7,26 +7,27 @@ fn main() {
     pc.set(2, 2);
 
     let start = std::time::Instant::now();
-    let part_1_answer = pc.run_program();
+    assert_eq!(pc.run_program(), IntCodeProgramState::Halted);
+    let part_1_answer = pc.get_data(0).unwrap();
 
     let time_taken = start.elapsed().as_secs_f32() * 1000.0;
     println!("Part 1: {part_1_answer} in {time_taken:.3} ms");
 
     let start = std::time::Instant::now();
-    let pc = IntCodePC::new(INPUT);
-    let part_2_answer = part_2(&pc);
+    let part_2_answer = part_2(&mut pc);
 
     let time_taken = start.elapsed().as_secs_f32() * 1000.0;
     println!("Part 2: {part_2_answer} in {time_taken:.3} ms");
 }
 
-fn part_2(initial_pc: &IntCodePC) -> i128 {
+fn part_2(pc: &mut IntCodePC) -> i128 {
     for x in 0..100 {
         for y in 0..100 {
-            let mut pc = initial_pc.clone();
+            pc.reset_all();
             pc.set(1, x);
             pc.set(2, y);
-            if pc.run_program() == 19690720 {
+            assert_eq!(pc.run_program(), IntCodeProgramState::Halted);
+            if pc.get_data(0) == Some(19690720) {
                 return x * 100 + y;
             }
         }
@@ -43,6 +44,7 @@ mod tests {
     #[test]
     fn part_1_test() {
         let mut pc = IntCodePC::new(TESTINPUT);
-        assert_eq!(pc.run_program(), 3500);
+        assert_eq!(pc.run_program(), IntCodeProgramState::Halted);
+        assert_eq!(pc.get_data(0), Some(3500));
     }
 }
