@@ -7,21 +7,25 @@ pub struct IntCodePC {
     input: VecDeque<i128>,
     output: VecDeque<i128>,
     initial_data: Vec<i128>,
+    relative_base: i128,
 }
 
 impl IntCodePC {
     pub fn new(program_input: &str) -> Self {
-        let data: Vec<i128> = program_input
+        let mut data: Vec<i128> = program_input
             .trim()
             .split(',')
             .map(|x| x.parse().unwrap())
             .collect();
+        data.resize(65536, 0);
+
         Self {
             data: data.clone(),
             pc: 0,
             input: VecDeque::default(),
             output: VecDeque::default(),
             initial_data: data,
+            relative_base: 0,
         }
     }
 
@@ -33,15 +37,15 @@ impl IntCodePC {
                 IntCodeInstructionType::Add => {
                     let operand_1 = self.get_operand(&next_instruction, 1);
                     let operand_2 = self.get_operand(&next_instruction, 2);
-                    let destination = self.data[self.pc + 3];
-                    self.data[usize::try_from(destination).unwrap()] = operand_1 + operand_2;
+                    let destination = self.get_destination(&next_instruction, 3);
+                    self.data[destination] = operand_1 + operand_2;
                     self.pc += 4;
                 }
                 IntCodeInstructionType::Mul => {
                     let operand_1 = self.get_operand(&next_instruction, 1);
                     let operand_2 = self.get_operand(&next_instruction, 2);
-                    let destination = self.data[self.pc + 3];
-                    self.data[usize::try_from(destination).unwrap()] = operand_1 * operand_2;
+                    let destination = self.get_destination(&next_instruction, 3);
+                    self.data[destination] = operand_1 * operand_2;
                     self.pc += 4;
                 }
                 IntCodeInstructionType::Input => {
@@ -49,8 +53,8 @@ impl IntCodePC {
                         return IntCodeProgramState::NeedsInput;
                     };
 
-                    let destination = self.data[self.pc + 1];
-                    self.data[usize::try_from(destination).unwrap()] = input_data;
+                    let destination = self.get_destination(&next_instruction, 1);
+                    self.data[destination] = input_data;
                     self.pc += 2;
                 }
                 IntCodeInstructionType::Output => {
@@ -75,7 +79,7 @@ impl IntCodePC {
                 IntCodeInstructionType::LessThan => {
                     let operand_1 = self.get_operand(&next_instruction, 1);
                     let operand_2 = self.get_operand(&next_instruction, 2);
-                    let destination = usize::try_from(self.data[self.pc + 3]).unwrap();
+                    let destination = self.get_destination(&next_instruction, 3);
                     if operand_1 < operand_2 {
                         self.data[destination] = 1;
                     } else {
@@ -86,13 +90,17 @@ impl IntCodePC {
                 IntCodeInstructionType::Equals => {
                     let operand_1 = self.get_operand(&next_instruction, 1);
                     let operand_2 = self.get_operand(&next_instruction, 2);
-                    let destination = usize::try_from(self.data[self.pc + 3]).unwrap();
+                    let destination = self.get_destination(&next_instruction, 3);
                     if operand_1 == operand_2 {
                         self.data[destination] = 1;
                     } else {
                         self.data[destination] = 0;
                     }
                     self.pc += 4;
+                }
+                IntCodeInstructionType::AdjustRelativeBase => {
+                    self.relative_base += self.get_operand(&next_instruction, 1);
+                    self.pc += 2;
                 }
                 IntCodeInstructionType::Halt => unreachable!(),
             }
@@ -110,7 +118,24 @@ impl IntCodePC {
                 self.data[usize::try_from(operand_location).unwrap()]
             }
             ParameterMode::Direct => self.data[self.pc + index],
+            ParameterMode::Relative => {
+                let operand_value = self.data[self.pc + index];
+                let relative_location = operand_value + self.relative_base;
+                self.data[usize::try_from(relative_location).unwrap()]
+            }
         }
+    }
+
+    fn get_destination(&self, instruction: &IntCodeInstruction, index: usize) -> usize {
+        match instruction.mode_of(index) {
+            ParameterMode::Relative => {
+                let operand_value = self.data[self.pc + index];
+                operand_value + self.relative_base
+            }
+            _ => self.data[self.pc + index],
+        }
+        .try_into()
+        .unwrap()
     }
 
     pub fn set(&mut self, index: usize, value: i128) {
@@ -126,6 +151,7 @@ impl IntCodePC {
         self.pc = 0;
         self.output = VecDeque::new();
         self.input = VecDeque::new();
+        self.relative_base = 0;
     }
 
     pub fn set_input(&mut self, new_input: VecDeque<i128>) {
@@ -174,6 +200,7 @@ pub enum IntCodeInstructionType {
     JumpIfFalse = 6,
     LessThan = 7,
     Equals = 8,
+    AdjustRelativeBase = 9,
     Halt = 99,
 }
 
@@ -190,6 +217,7 @@ impl TryFrom<i128> for IntCodeInstructionType {
             6 => Ok(Self::JumpIfFalse),
             7 => Ok(Self::LessThan),
             8 => Ok(Self::Equals),
+            9 => Ok(Self::AdjustRelativeBase),
             99 => Ok(Self::Halt),
             _ => Err(()),
         }
@@ -199,6 +227,7 @@ impl TryFrom<i128> for IntCodeInstructionType {
 pub enum ParameterMode {
     Position = 0,
     Direct = 1,
+    Relative = 2,
 }
 
 impl TryFrom<i128> for ParameterMode {
@@ -208,6 +237,7 @@ impl TryFrom<i128> for ParameterMode {
         match value % 100 {
             0 => Ok(Self::Position),
             1 => Ok(Self::Direct),
+            2 => Ok(Self::Relative),
             _ => Err(()),
         }
     }
@@ -275,5 +305,29 @@ mod tests {
         pc.run_program();
         let output = pc.get_output();
         assert_eq!(output[0], 0);
+    }
+
+    #[test]
+    fn test_relative() {
+        // Output is a copy of the program
+        let input = "109,1,204,-1,1001,100,1,100,1008,100,16,101,1006,101,0,99";
+        let mut pc = IntCodePC::new(input);
+        let data: Vec<i128> = input
+            .trim()
+            .split(',')
+            .map(|x| x.parse().unwrap())
+            .collect();
+        pc.run_program();
+        let output: Vec<i128> = pc.get_output().into();
+        assert_eq!(data, output);
+
+        // Output is its input
+        let input = "109,1,203,11,209,8,204,1,99,10,0,42,0";
+        let mut pc = IntCodePC::new(input);
+        pc.set_input([2024].into());
+        pc.run_program();
+        let output = pc.get_output();
+        println!("{output:?}");
+        assert_eq!(output[0], 2024);
     }
 }
