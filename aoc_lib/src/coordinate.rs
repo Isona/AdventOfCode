@@ -56,6 +56,19 @@ impl Coordinate {
 
         None
     }
+
+    pub fn get_next_in_direction(&self, direction: Direction) -> Option<Coordinate> {
+        Some(match direction {
+            Direction::North => Coordinate::new(self.x, self.y.checked_sub(1)?),
+            Direction::South => Coordinate::new(self.x, self.y + 1),
+            Direction::East => Coordinate::new(self.x + 1, self.y),
+            Direction::West => Coordinate::new(self.x.checked_sub(1)?, self.y),
+            Direction::NorthEast => Coordinate::new(self.x + 1, self.y.checked_sub(1)?),
+            Direction::NorthWest => Coordinate::new(self.x.checked_sub(1)?, self.y.checked_sub(1)?),
+            Direction::SouthEast => Coordinate::new(self.x + 1, self.y + 1),
+            Direction::SouthWest => Coordinate::new(self.x.checked_sub(1)?, self.y + 1),
+        })
+    }
 }
 
 impl Mul for Coordinate {
