@@ -16,7 +16,7 @@ fn main() {
 
     pc.reset_all();
     let start = std::time::Instant::now();
-    let part_2_answer = part_2(&mut pc);
+    part_2(&mut pc);
 
     let time_taken = start.elapsed().as_secs_f32() * 1000.0;
     println!("Part 2 in {time_taken:.3} ms");
@@ -46,7 +46,7 @@ fn part_1(pc: &mut IntCodePC) -> usize {
 
 fn part_2(pc: &mut IntCodePC) {
     let mut grid = Grid::new();
-    for _ in (0..10) {
+    for _ in 0..10 {
         grid.push_row([PaintColour::Black; 50].to_vec());
     }
 
