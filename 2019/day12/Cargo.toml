@@ -1,0 +1,9 @@
+[package]
+name = "day12"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+num = "0.4.3"
+regex = "1.11.1"
+rustc-hash = "2.1.0"
