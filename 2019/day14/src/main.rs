@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::collections::{HashMap, VecDeque};
 use std::fmt::Display;
 use std::hash::Hash;
@@ -29,33 +30,37 @@ fn part_1(input: &HashMap<RecipeItem, Vec<RecipeItem>>) -> usize {
     while !queue.is_empty() {
         let mut next_output = queue.pop_front().unwrap();
         if let Some(remainder) = remainders.remove(&next_output) {
-            if next_output.quantity > remainder {
-                next_output.quantity -= remainder;
-            } else if next_output.quantity == remainder {
-                continue;
-            } else {
-                let remainder = remainder - next_output.quantity;
-                remainders.insert(next_output, remainder);
-                continue;
+            match next_output.quantity.cmp(&remainder) {
+                Ordering::Greater => {
+                    next_output.quantity -= remainder;
+                }
+                Ordering::Equal => continue,
+                Ordering::Less => {
+                    let remainder = remainder - next_output.quantity;
+                    remainders.insert(next_output, remainder);
+                    continue;
+                }
             }
         }
 
         if let Some((result, ingredients)) = input.get_key_value(&next_output) {
-            let times_to_make_recipe = if next_output.quantity < result.quantity {
-                remainders.insert(next_output.clone(), result.quantity - &next_output.quantity);
-                1
-            } else if next_output.quantity == result.quantity {
-                1
-            } else {
-                let times_to_make_recipe = next_output.quantity.div_ceil(result.quantity);
-                let remainder = result.quantity * times_to_make_recipe - &next_output.quantity;
-                if remainder != 0 {
-                    remainders.insert(
-                        next_output.clone(),
-                        result.quantity * times_to_make_recipe - &next_output.quantity,
-                    );
+            let times_to_make_recipe = match next_output.quantity.cmp(&result.quantity) {
+                Ordering::Less => {
+                    remainders.insert(next_output.clone(), result.quantity - next_output.quantity);
+                    1
                 }
-                times_to_make_recipe
+                Ordering::Equal => 1,
+                Ordering::Greater => {
+                    let times_to_make_recipe = next_output.quantity.div_ceil(result.quantity);
+                    let remainder = result.quantity * times_to_make_recipe - next_output.quantity;
+                    if remainder != 0 {
+                        remainders.insert(
+                            next_output.clone(),
+                            result.quantity * times_to_make_recipe - next_output.quantity,
+                        );
+                    }
+                    times_to_make_recipe
+                }
             };
 
             for ingredient in ingredients {
@@ -82,33 +87,39 @@ fn part_2(input: &HashMap<RecipeItem, Vec<RecipeItem>>) -> u64 {
         while !queue.is_empty() {
             let mut next_output = queue.pop_front().unwrap();
             if let Some(remainder) = remainders.remove(&next_output) {
-                if next_output.quantity > remainder {
-                    next_output.quantity -= remainder;
-                } else if next_output.quantity == remainder {
-                    continue;
-                } else {
-                    let remainder = remainder - next_output.quantity;
-                    remainders.insert(next_output, remainder);
-                    continue;
+                match next_output.quantity.cmp(&remainder) {
+                    Ordering::Greater => {
+                        next_output.quantity -= remainder;
+                    }
+                    Ordering::Equal => continue,
+                    Ordering::Less => {
+                        let remainder = remainder - next_output.quantity;
+                        remainders.insert(next_output, remainder);
+                        continue;
+                    }
                 }
             }
 
             if let Some((result, ingredients)) = input.get_key_value(&next_output) {
-                let times_to_make_recipe = if next_output.quantity < result.quantity {
-                    remainders.insert(next_output.clone(), result.quantity - &next_output.quantity);
-                    1
-                } else if next_output.quantity == result.quantity {
-                    1
-                } else {
-                    let times_to_make_recipe = next_output.quantity.div_ceil(result.quantity);
-                    let remainder = result.quantity * times_to_make_recipe - &next_output.quantity;
-                    if remainder != 0 {
-                        remainders.insert(
-                            next_output.clone(),
-                            result.quantity * times_to_make_recipe - &next_output.quantity,
-                        );
+                let times_to_make_recipe = match next_output.quantity.cmp(&result.quantity) {
+                    Ordering::Less => {
+                        remainders
+                            .insert(next_output.clone(), result.quantity - next_output.quantity);
+                        1
                     }
-                    times_to_make_recipe
+                    Ordering::Equal => 1,
+                    Ordering::Greater => {
+                        let times_to_make_recipe = next_output.quantity.div_ceil(result.quantity);
+                        let remainder =
+                            result.quantity * times_to_make_recipe - next_output.quantity;
+                        if remainder != 0 {
+                            remainders.insert(
+                                next_output.clone(),
+                                result.quantity * times_to_make_recipe - next_output.quantity,
+                            );
+                        }
+                        times_to_make_recipe
+                    }
                 };
 
                 for ingredient in ingredients {
@@ -164,10 +175,7 @@ impl RecipeItem {
     }
 
     fn new(quantity: usize, material: String) -> Self {
-        Self {
-            quantity,
-            material: material,
-        }
+        Self { quantity, material }
     }
 }
 

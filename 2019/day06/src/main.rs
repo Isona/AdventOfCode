@@ -35,7 +35,7 @@ fn get_orbiters_count(base: &str, orbit_list: &HashMap<String, HashSet<String>>)
     let mut orbit_count = orbiters.len();
 
     for orbiter in orbiters {
-        orbit_count += get_orbiters_count(&orbiter, orbit_list);
+        orbit_count += get_orbiters_count(orbiter, orbit_list);
     }
 
     orbit_count
@@ -66,7 +66,7 @@ fn get_parents(goal: &str, orbit_list: &HashMap<String, HashSet<String>>) -> Vec
         }
     }
 
-    return Vec::new();
+    Vec::new()
 }
 
 fn parse_input(input: &str) -> HashMap<String, HashSet<String>> {
@@ -100,6 +100,6 @@ mod tests {
     #[test]
     fn part_2_test() {
         let input = parse_input(TESTINPUT2);
-        assert_eq!(part_2(&input), 379);
+        assert_eq!(part_2(&input), 4);
     }
 }

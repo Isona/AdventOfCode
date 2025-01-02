@@ -42,10 +42,10 @@ fn get_thruster_signal(pc: &mut IntCodePC, signals: VecDeque<i128>) -> i128 {
 }
 
 fn part_2(input: &str) -> i128 {
-    let mut pc = IntCodePC::new(input);
+    let pc = IntCodePC::new(input);
     (5..10)
         .permutations(5)
-        .map(|signals| get_feedback_thruster_signal(&mut pc, signals.into()))
+        .map(|signals| get_feedback_thruster_signal(&pc, signals.into()))
         .max()
         .unwrap()
 }

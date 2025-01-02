@@ -1,5 +1,6 @@
 use regex::Regex;
 use rustc_hash::FxHashMap as HashMap;
+use std::collections::hash_map::Entry;
 const INPUT: &str = include_str!("input.txt");
 
 fn main() {
@@ -36,31 +37,31 @@ fn part_2(moons: &mut [Moon]) -> i64 {
     while !x_repeat || !y_repeat || !z_repeat {
         if !x_repeat {
             let x_state = get_x_state(moons);
-            if x_states.contains_key(&x_state) {
+            if let Entry::Vacant(entry) = x_states.entry(x_state) {
+                entry.insert(current_cycle);
+            } else {
                 x_repeat = true;
                 x_repeat_time = current_cycle;
-            } else {
-                x_states.insert(x_state, current_cycle);
             }
         }
 
         if !y_repeat {
             let y_state = get_y_state(moons);
-            if y_states.contains_key(&y_state) {
+            if let Entry::Vacant(entry) = y_states.entry(y_state) {
+                entry.insert(current_cycle);
+            } else {
                 y_repeat = true;
                 y_repeat_time = current_cycle;
-            } else {
-                y_states.insert(y_state, current_cycle);
             }
         }
 
         if !z_repeat {
             let z_state = get_z_state(moons);
-            if z_states.contains_key(&z_state) {
+            if let Entry::Vacant(entry) = z_states.entry(z_state) {
+                entry.insert(current_cycle);
+            } else {
                 z_repeat = true;
                 z_repeat_time = current_cycle;
-            } else {
-                z_states.insert(z_state, current_cycle);
             }
         }
 
@@ -76,7 +77,7 @@ fn part_2(moons: &mut [Moon]) -> i64 {
 }
 
 fn do_n_iterations(input: &[Moon], iter_count: usize) -> i64 {
-    let mut moons: Vec<Moon> = input.iter().cloned().collect();
+    let mut moons: Vec<Moon> = input.to_vec();
     for _ in 0..iter_count {
         do_iteration(&mut moons);
     }
@@ -87,7 +88,7 @@ fn do_n_iterations(input: &[Moon], iter_count: usize) -> i64 {
 fn do_iteration(input: &mut [Moon]) {
     for current_moon_index in 0..input.len() {
         for other_moon_index in (0..input.len()).filter(|index| index != &current_moon_index) {
-            let other_moon = input.get(other_moon_index).unwrap().clone();
+            let other_moon = *input.get(other_moon_index).unwrap();
             let current_moon = input.get_mut(current_moon_index).unwrap();
             current_moon.update_velocity(&other_moon);
         }
@@ -166,20 +167,22 @@ impl Moon {
     }
 
     fn update_velocity(&mut self, other: &Self) {
-        if self.pos_x < other.pos_x {
-            self.vel_x += 1;
-        } else if self.pos_x > other.pos_x {
-            self.vel_x -= 1;
+        match self.pos_x.cmp(&other.pos_x) {
+            std::cmp::Ordering::Less => self.vel_x += 1,
+            std::cmp::Ordering::Equal => {}
+            std::cmp::Ordering::Greater => self.vel_x -= 1,
         }
-        if self.pos_y < other.pos_y {
-            self.vel_y += 1;
-        } else if self.pos_y > other.pos_y {
-            self.vel_y -= 1;
+
+        match self.pos_y.cmp(&other.pos_y) {
+            std::cmp::Ordering::Less => self.vel_y += 1,
+            std::cmp::Ordering::Equal => {}
+            std::cmp::Ordering::Greater => self.vel_y -= 1,
         }
-        if self.pos_z < other.pos_z {
-            self.vel_z += 1;
-        } else if self.pos_z > other.pos_z {
-            self.vel_z -= 1;
+
+        match self.pos_z.cmp(&other.pos_z) {
+            std::cmp::Ordering::Less => self.vel_z += 1,
+            std::cmp::Ordering::Equal => {}
+            std::cmp::Ordering::Greater => self.vel_z -= 1,
         }
     }
 

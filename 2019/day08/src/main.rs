@@ -1,5 +1,4 @@
 #![feature(iter_array_chunks, array_chunks)]
-use std::usize;
 
 use aoc_lib::{Coordinate, Grid};
 

@@ -1,4 +1,4 @@
-use std::{collections::HashMap, i128::MAX};
+use std::collections::HashMap;
 
 use aoc_lib::Vector;
 
@@ -29,8 +29,8 @@ fn part_1(wire_1: &Vec<Line>, wire_2: &Vec<Line>) -> (i128, i128) {
         }
     }
 
-    let mut min_intersection = MAX;
-    let mut min_steps = MAX;
+    let mut min_intersection = i128::MAX;
+    let mut min_steps = i128::MAX;
 
     current_coord = Vector::new(0, 0);
     steps = 0;

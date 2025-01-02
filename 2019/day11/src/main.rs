@@ -37,7 +37,7 @@ fn part_1(pc: &mut IntCodePC) -> usize {
             _ => panic!(),
         };
         coordinate = coordinate.get_next_in_direction(direction).unwrap();
-        let next_input = *painted_coordinates.get(&coordinate).unwrap_or_else(|| &0);
+        let next_input = *painted_coordinates.get(&coordinate).unwrap_or(&0);
         pc.set_input([next_input].into());
     }
 

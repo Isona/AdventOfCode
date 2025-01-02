@@ -22,7 +22,7 @@ fn part_1(range: &(i32, i32)) -> usize {
 
 fn meets_criteria_part_1(input_number: &i32) -> bool {
     let mut adjacent = false;
-    for (digit_1, digit_2) in input_number.to_string().chars().into_iter().tuple_windows() {
+    for (digit_1, digit_2) in input_number.to_string().chars().tuple_windows() {
         // Going from left to right, the digits never decrease; they only ever increase or stay the same (like 111123 or 135679).
         if digit_2.to_digit(10).unwrap() < digit_1.to_digit(10).unwrap() {
             return false;
@@ -41,7 +41,7 @@ fn part_2(range: &(i32, i32)) -> usize {
 }
 
 fn meets_criteria_part_2(input_number: &i32) -> bool {
-    for (digit_1, digit_2) in input_number.to_string().chars().into_iter().tuple_windows() {
+    for (digit_1, digit_2) in input_number.to_string().chars().tuple_windows() {
         // Going from left to right, the digits never decrease; they only ever increase or stay the same (like 111123 or 135679).
         if digit_2.to_digit(10).unwrap() < digit_1.to_digit(10).unwrap() {
             return false;
