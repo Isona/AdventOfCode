@@ -108,7 +108,7 @@ impl IntCodePC {
             next_instruction = IntCodeInstruction::new(self.data[self.pc]);
         }
 
-        return IntCodeProgramState::Halted;
+        IntCodeProgramState::Halted
     }
 
     fn get_operand(&self, instruction: &IntCodeInstruction, index: usize) -> i128 {
@@ -168,6 +168,16 @@ impl IntCodePC {
 
     pub fn get_data(&self, index: usize) -> Option<i128> {
         self.data.get(index).copied()
+    }
+
+    pub fn run_with_input(
+        &mut self,
+        input: VecDeque<i128>,
+    ) -> (IntCodeProgramState, VecDeque<i128>) {
+        self.input = input;
+        let state = self.run_program();
+        let output = self.take_output();
+        (state, output)
     }
 }
 
