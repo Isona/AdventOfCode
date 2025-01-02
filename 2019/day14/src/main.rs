@@ -68,12 +68,65 @@ fn part_1(input: &HashMap<RecipeItem, Vec<RecipeItem>>) -> usize {
     }
 
     // We start with 1 fuel
-    println!("{remainders:?}");
+    //println!("{remainders:?}");
     ore_count
 }
 
 fn part_2(input: &HashMap<RecipeItem, Vec<RecipeItem>>) -> u64 {
-    todo!();
+    let mut ore_count = 0;
+    let mut fuel_count = 0;
+    let mut remainders = HashMap::new();
+    loop {
+        let mut queue = VecDeque::from([RecipeItem::new(1, "FUEL".to_string())]);
+
+        while !queue.is_empty() {
+            let mut next_output = queue.pop_front().unwrap();
+            if let Some(remainder) = remainders.remove(&next_output) {
+                if next_output.quantity > remainder {
+                    next_output.quantity -= remainder;
+                } else if next_output.quantity == remainder {
+                    continue;
+                } else {
+                    let remainder = remainder - next_output.quantity;
+                    remainders.insert(next_output, remainder);
+                    continue;
+                }
+            }
+
+            if let Some((result, ingredients)) = input.get_key_value(&next_output) {
+                let times_to_make_recipe = if next_output.quantity < result.quantity {
+                    remainders.insert(next_output.clone(), result.quantity - &next_output.quantity);
+                    1
+                } else if next_output.quantity == result.quantity {
+                    1
+                } else {
+                    let times_to_make_recipe = next_output.quantity.div_ceil(result.quantity);
+                    let remainder = result.quantity * times_to_make_recipe - &next_output.quantity;
+                    if remainder != 0 {
+                        remainders.insert(
+                            next_output.clone(),
+                            result.quantity * times_to_make_recipe - &next_output.quantity,
+                        );
+                    }
+                    times_to_make_recipe
+                };
+
+                for ingredient in ingredients {
+                    queue.push_back(ingredient * times_to_make_recipe);
+                }
+            } else {
+                assert_eq!(next_output.material, "ORE");
+                ore_count += next_output.quantity
+            }
+        }
+
+        // We start with 1 fuel
+        //println!("{remainders:?}");
+        if ore_count > 1000000000000 {
+            break fuel_count;
+        }
+        fuel_count += 1;
+    }
 }
 
 // 1 DGFK, 1 SXNZP, 1 GCHL => 9 JZWH
@@ -154,12 +207,12 @@ mod tests {
     #[test]
     fn part_1_test() {
         let input = parse_input(TESTINPUT);
-        assert_eq!(part_1(&input), 7);
+        assert_eq!(part_1(&input), 180697);
     }
 
     #[test]
     fn part_2_test() {
         let input = parse_input(TESTINPUT);
-        assert_eq!(part_2(&input), 5);
+        assert_eq!(part_2(&input), 5586022);
     }
 }
