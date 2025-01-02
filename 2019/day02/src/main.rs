@@ -21,19 +21,39 @@ fn main() {
 }
 
 fn part_2(pc: &mut IntCodePC) -> i128 {
-    for x in 0..100 {
-        for y in 0..100 {
-            pc.reset_all();
-            pc.set(1, x);
-            pc.set(2, y);
-            assert_eq!(pc.run_program(), IntCodeProgramState::Halted);
-            if pc.get_data(0) == Some(19690720) {
-                return x * 100 + y;
-            }
-        }
-    }
+    // Calculate it faster by working out what difference x and y have on the output
 
-    panic!()
+    // Find output when x and y are both 0
+    // This is the base value
+    pc.reset_all();
+    pc.set(1, 0);
+    pc.set(2, 0);
+    pc.run_program();
+    let base_value = pc.get_data(0).unwrap();
+
+    // Find output when x = 1, y = 0
+    pc.reset_all();
+    pc.set(1, 1);
+    pc.set(2, 0);
+    pc.run_program();
+    let x1y0 = pc.get_data(0).unwrap();
+
+    // Base_value has x * x_vector added to it
+    let x_vector = x1y0 - base_value;
+
+    pc.reset_all();
+    pc.set(1, 0);
+    pc.set(2, 1);
+    pc.run_program();
+    let x0y1 = pc.get_data(0).unwrap();
+    // Base_value has y*y_vector added to it
+    let y_vector = x0y1 - base_value;
+
+    // Subtract the base value from our goal output
+    let goal = 19690720 - base_value;
+    let x = goal / x_vector;
+    let y = (goal % x_vector) / y_vector;
+    x * 100 + y
 }
 
 #[cfg(test)]
