@@ -57,7 +57,30 @@ fn do_phase(input: &[i32]) -> Vec<i32> {
 }
 
 fn part_2(input: &[i32]) -> String {
-    todo!();
+    let input = input.iter().map(|x| *x as u64).collect_vec();
+    let split_point: usize = input[0..7]
+        .iter()
+        .fold(0, |acc, item| acc * 10 + item)
+        .try_into()
+        .unwrap();
+    println!("{split_point}");
+    assert!(split_point > input.len() / 2);
+    let total_signal_length = input.len() * 10000;
+    let signal_repetitions: usize = (total_signal_length - split_point).div_ceil(input.len());
+    let skip_len = split_point % input.len();
+    let mut input = input.repeat(signal_repetitions).split_off(skip_len);
+    println!("{:?}", &input.len());
+    input.reverse();
+
+    for _ in 0..100 {
+        for index in 1..input.len() {
+            input[index] = (input[index] + input[index - 1]) % 10;
+        }
+    }
+
+    (0..8)
+        .map(|_| input.pop().map(|x| x % 10).unwrap())
+        .join("")
 }
 
 fn parse_input(input: &str) -> Vec<i32> {
@@ -84,6 +107,6 @@ mod tests {
     #[test]
     fn part_2_test() {
         let input = parse_input("03036732577212944063491565474664");
-        assert_eq!(part_2(&input), "84462026");
+        assert_eq!(part_1(input.repeat(10000), 100), "84462026");
     }
 }
