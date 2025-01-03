@@ -63,18 +63,19 @@ fn part_2(input: &[i32]) -> String {
         .fold(0, |acc, item| acc * 10 + item)
         .try_into()
         .unwrap();
-    println!("{split_point}");
     assert!(split_point > input.len() / 2);
+
     let total_signal_length = input.len() * 10000;
     let signal_repetitions: usize = (total_signal_length - split_point).div_ceil(input.len());
     let skip_len = split_point % input.len();
     let mut input = input.repeat(signal_repetitions).split_off(skip_len);
-    println!("{:?}", &input.len());
     input.reverse();
 
     for _ in 0..100 {
-        for index in 1..input.len() {
-            input[index] = (input[index] + input[index - 1]) % 10;
+        let mut prev = input[0];
+        for value in input.iter_mut().skip(1) {
+            *value = (*value + prev) % 10;
+            prev = *value;
         }
     }
 
