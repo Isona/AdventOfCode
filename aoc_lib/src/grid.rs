@@ -138,6 +138,19 @@ impl<T> Grid<T> {
             .map(|x| x.0)
     }
 
+    pub fn find_all_by<'self_, F>(
+        &'self_ self,
+        mut function: F,
+    ) -> impl Iterator<Item = Coordinate> + 'self_
+    where
+        T: PartialEq,
+        F: FnMut(&T) -> bool + 'self_,
+    {
+        self.indexed_iter()
+            .filter(move |(_coord, t)| function(t))
+            .map(|x| x.0)
+    }
+
     fn index_to_coord(&self, index: usize) -> Coordinate {
         Coordinate {
             x: index % self.row_len,
