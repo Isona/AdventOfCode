@@ -1,16 +1,10 @@
 use std::{
-    collections::{HashMap, HashSet, VecDeque},
+    collections::{BTreeSet, HashMap, HashSet},
     fmt::Display,
-    mem::discriminant,
-    usize,
 };
 
 use aoc_lib::{Coordinate, Grid};
-use petgraph::{
-    algo::floyd_warshall,
-    prelude::UnGraphMap,
-    visit::{Dfs, Visitable, Walker},
-};
+use petgraph::{algo::floyd_warshall, prelude::UnGraphMap};
 
 const INPUT: &str = include_str!("input.txt");
 
@@ -31,7 +25,7 @@ fn main() {
 }
 
 fn part_1(grid: &Grid<CellType>) -> usize {
-    // Make a graph but exclude all doors
+    // Make a graph
     let mut graph = UnGraphMap::new();
     for coordinate in grid.find_all_by(|x| x != &CellType::Wall) {
         for neighbour in grid
@@ -42,13 +36,14 @@ fn part_1(grid: &Grid<CellType>) -> usize {
         }
     }
 
+    // Inefficient floyd!
     let floyd = floyd_warshall(&graph, |_| 1).unwrap();
     println!("Floyd done!");
 
     let current_coordinate = grid.find_item(&CellType::Entrance).unwrap();
     let mut visited = HashSet::from([current_coordinate]);
     let mut keys_required = HashMap::new();
-    let mut current_doors = HashSet::new();
+    let mut current_doors = BTreeSet::new();
 
     dfs(
         grid,
@@ -60,15 +55,10 @@ fn part_1(grid: &Grid<CellType>) -> usize {
 
     println!("{keys_required:?}");
 
-    find_shortest_path_to_keys(
-        grid,
-        &floyd,
-        &keys_required,
-        current_coordinate,
-        &mut HashSet::new(),
-        0,
-        usize::MAX,
-    )
+    let mut states = HashMap::new();
+    states.insert((BTreeSet::new(), current_coordinate), 0);
+
+    find_shortest_bfs(grid, &floyd, &keys_required, &states)
 }
 
 fn part_2(input: &Grid<CellType>) -> u64 {
@@ -79,8 +69,8 @@ fn dfs(
     grid: &Grid<CellType>,
     current_location: Coordinate,
     visited: &mut HashSet<Coordinate>,
-    keys_required: &mut HashMap<char, HashSet<char>>,
-    current_doors: &mut HashSet<char>,
+    keys_required: &mut HashMap<char, BTreeSet<char>>,
+    current_doors: &mut BTreeSet<char>,
 ) {
     let current_value = grid.get(current_location);
 
@@ -114,57 +104,45 @@ fn dfs(
     }
 }
 
-// Input:
-// List of shortest paths between keys
-// Required Keys
-// Currently collected keys
-//
-
-fn find_shortest_path_to_keys(
+fn find_shortest_bfs(
     grid: &Grid<CellType>,
     floyd: &HashMap<(Coordinate, Coordinate), usize>,
-    keys_required: &HashMap<char, HashSet<char>>,
-    current_location: Coordinate,
-    keys_collected: &mut HashSet<char>,
-    total_path_length: usize,
-    min_path_length: usize,
+    keys_required: &HashMap<char, BTreeSet<char>>,
+    states: &HashMap<(BTreeSet<char>, Coordinate), usize>,
 ) -> usize {
-    if total_path_length > min_path_length {
-        return min_path_length;
+    let mut next_states: HashMap<(BTreeSet<char>, Coordinate), usize> = HashMap::new();
+
+    for ((keys_collected, current_location), distance) in states {
+        let possible_next_keys: Vec<char> = keys_required
+            .iter()
+            .filter(|(key, requirements)| {
+                !keys_collected.contains(key) && requirements.is_subset(keys_collected)
+            })
+            .map(|(key, _)| *key)
+            .collect();
+
+        if possible_next_keys.is_empty() {
+            return *states.iter().map(|x| x.1).min().unwrap();
+        }
+
+        for key in possible_next_keys {
+            let key_location = grid.find_item(&CellType::Key(key)).unwrap();
+            let new_path_len = distance + floyd.get(&(*current_location, key_location)).unwrap();
+
+            let mut new_state = keys_collected.clone();
+            new_state.insert(key);
+            let new_state = (new_state, key_location);
+            if let Some(other_state_dist) = next_states.get(&new_state) {
+                if new_path_len < *other_state_dist {
+                    next_states.insert(new_state, new_path_len);
+                }
+            } else {
+                next_states.insert(new_state, new_path_len);
+            }
+        }
     }
 
-    let mut min_path = min_path_length;
-    let possible_next_keys: Vec<char> = keys_required
-        .iter()
-        .filter(|(key, requirements)| {
-            !keys_collected.contains(key) && requirements.is_subset(keys_collected)
-        })
-        .map(|(key, _)| *key)
-        .collect();
-
-    if possible_next_keys.is_empty() {
-        return total_path_length;
-    }
-
-    for key in possible_next_keys {
-        let key_location = grid.find_item(&CellType::Key(key)).unwrap();
-        let new_path_len =
-            total_path_length + floyd.get(&(current_location, key_location)).unwrap();
-        keys_collected.insert(key);
-        let path_len = find_shortest_path_to_keys(
-            grid,
-            floyd,
-            keys_required,
-            key_location,
-            keys_collected,
-            new_path_len,
-            min_path,
-        );
-        keys_collected.remove(&key);
-        min_path = min_path.min(path_len);
-    }
-
-    min_path
+    find_shortest_bfs(grid, floyd, keys_required, &next_states)
 }
 
 fn parse_input(input: &str) -> Grid<CellType> {
