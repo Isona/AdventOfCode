@@ -1,10 +1,11 @@
 use std::{
     collections::{BTreeSet, HashMap, HashSet},
     fmt::Display,
+    mem::discriminant,
 };
 
 use aoc_lib::{Coordinate, Grid};
-use petgraph::{algo::floyd_warshall, prelude::UnGraphMap};
+use petgraph::{algo::dijkstra, prelude::UnGraphMap};
 
 const INPUT: &str = include_str!("input.txt");
 
@@ -36,16 +37,25 @@ fn part_1(grid: &Grid<CellType>) -> usize {
         }
     }
 
-    // Inefficient floyd!
-    let floyd = floyd_warshall(&graph, |_| 1).unwrap();
-    println!("Floyd done!");
-
+    // Find the start location
     let current_coordinate = grid.find_item(&CellType::Entrance).unwrap();
+
+    // Find the distances from the start point and all keys to all other points
+    let mut distances = HashMap::new();
+    distances.insert(
+        current_coordinate,
+        dijkstra(&graph, current_coordinate, None, |_| 1),
+    );
+
+    for key in grid.find_all_by(|x| discriminant(x) == discriminant(&CellType::Key('a'))) {
+        distances.insert(key, dijkstra(&graph, key, None, |_| 1));
+    }
+
     let mut visited = HashSet::from([current_coordinate]);
     let mut keys_required = HashMap::new();
     let mut current_doors = BTreeSet::new();
 
-    dfs(
+    get_key_requirements(
         grid,
         current_coordinate,
         &mut visited,
@@ -58,14 +68,15 @@ fn part_1(grid: &Grid<CellType>) -> usize {
     let mut states = HashMap::new();
     states.insert((BTreeSet::new(), current_coordinate), 0);
 
-    find_shortest_bfs(grid, &floyd, &keys_required, &states)
+    find_shortest_path_to_all_keys(grid, &distances, &keys_required, &states)
 }
 
 fn part_2(input: &Grid<CellType>) -> u64 {
     todo!();
 }
 
-fn dfs(
+// Does DFS, storing the keys required to obtain each key in keys_required
+fn get_key_requirements(
     grid: &Grid<CellType>,
     current_location: Coordinate,
     visited: &mut HashSet<Coordinate>,
@@ -89,7 +100,7 @@ fn dfs(
         .filter(|neighbour| neighbour.value != &CellType::Wall)
     {
         if visited.insert(neighbour.location) {
-            dfs(
+            get_key_requirements(
                 grid,
                 neighbour.location,
                 visited,
@@ -104,12 +115,15 @@ fn dfs(
     }
 }
 
-fn find_shortest_bfs(
+// Performs breadth first search
+// Uses states to ensure no redundant paths are searched
+fn find_shortest_path_to_all_keys(
     grid: &Grid<CellType>,
-    floyd: &HashMap<(Coordinate, Coordinate), usize>,
+    distances: &HashMap<Coordinate, HashMap<Coordinate, usize>>,
     keys_required: &HashMap<char, BTreeSet<char>>,
     states: &HashMap<(BTreeSet<char>, Coordinate), usize>,
 ) -> usize {
+    // Initialise next states
     let mut next_states: HashMap<(BTreeSet<char>, Coordinate), usize> = HashMap::new();
 
     for ((keys_collected, current_location), distance) in states {
@@ -121,17 +135,28 @@ fn find_shortest_bfs(
             .map(|(key, _)| *key)
             .collect();
 
+        // If there are no more keys to pick up, then this is the base case - all states have the same length, we have all keys
+        // Return the minimum path length from amongst the states
         if possible_next_keys.is_empty() {
             return *states.iter().map(|x| x.1).min().unwrap();
         }
 
-        for key in possible_next_keys {
-            let key_location = grid.find_item(&CellType::Key(key)).unwrap();
-            let new_path_len = distance + floyd.get(&(*current_location, key_location)).unwrap();
+        // Get the dijkstra results for the current location
+        let distances_from_current = distances.get(current_location).unwrap();
 
+        // Find potential next keys
+        for key in possible_next_keys {
+            // Get the location of the key and calculate the path len
+            let key_location = grid.find_item(&CellType::Key(key)).unwrap();
+            let new_path_len = distance + distances_from_current.get(&key_location).unwrap();
+
+            // Create the new state with the key inserted
             let mut new_state = keys_collected.clone();
             new_state.insert(key);
             let new_state = (new_state, key_location);
+
+            // Add the new state to the table for the next iteration
+            // Keep the minimum path length if it already exists
             if let Some(other_state_dist) = next_states.get(&new_state) {
                 if new_path_len < *other_state_dist {
                     next_states.insert(new_state, new_path_len);
@@ -142,7 +167,8 @@ fn find_shortest_bfs(
         }
     }
 
-    find_shortest_bfs(grid, floyd, keys_required, &next_states)
+    // Iterate using the next set of states
+    find_shortest_path_to_all_keys(grid, distances, keys_required, &next_states)
 }
 
 fn parse_input(input: &str) -> Grid<CellType> {
