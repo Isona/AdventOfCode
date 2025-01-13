@@ -4,13 +4,13 @@ use std::{
     mem::discriminant,
 };
 
-use aoc_lib::{Coordinate, Grid};
+use aoc_lib::{Coordinate, Direction, Grid};
 use petgraph::{algo::dijkstra, prelude::UnGraphMap};
 
 const INPUT: &str = include_str!("input.txt");
 
 fn main() {
-    let input = parse_input(INPUT);
+    let mut input = parse_input(INPUT);
 
     let start = std::time::Instant::now();
     let part_1_answer = part_1(&input);
@@ -19,7 +19,7 @@ fn main() {
     println!("Part 1: {part_1_answer} in {time_taken:.3} ms");
 
     let start = std::time::Instant::now();
-    let part_2_answer = part_2(&input);
+    let part_2_answer = part_2(&mut input);
 
     let time_taken = start.elapsed().as_secs_f32() * 1000.0;
     println!("Part 2: {part_2_answer} in {time_taken:.3} ms");
@@ -71,8 +71,69 @@ fn part_1(grid: &Grid<CellType>) -> usize {
     find_shortest_path_to_all_keys(grid, &distances, &keys_required, &states)
 }
 
-fn part_2(input: &Grid<CellType>) -> u64 {
-    todo!();
+fn part_2(grid: &mut Grid<CellType>) -> usize {
+    // Update to 4 vaults instead of 1
+    update_grid(grid);
+
+    // Make a graph
+    let mut graph = UnGraphMap::new();
+    for coordinate in grid.find_all_by(|x| x != &CellType::Wall) {
+        for neighbour in grid
+            .get_cardinal_neighbours(coordinate)
+            .filter(|neighbour| neighbour.value != &CellType::Wall)
+        {
+            graph.add_edge(coordinate, neighbour.location, 1);
+        }
+    }
+
+    // Find the distances from the start point and all keys to all other points
+    let mut distances = HashMap::new();
+    for start_point in grid.find_all(&CellType::Entrance) {
+        distances.insert(start_point, dijkstra(&graph, start_point, None, |_| 1));
+    }
+
+    for key in grid.find_all_by(|x| discriminant(x) == discriminant(&CellType::Key('a'))) {
+        distances.insert(key, dijkstra(&graph, key, None, |_| 1));
+    }
+
+    let start_points: Vec<Coordinate> = grid.find_all(&CellType::Entrance).collect();
+    let mut vault_keys = HashMap::new();
+    let mut keys_required = HashMap::new();
+
+    for (index, start_point) in start_points.iter().enumerate() {
+        let mut vault_keys_required = HashMap::new();
+        get_key_requirements(
+            grid,
+            *start_point,
+            &mut HashSet::from([*start_point]),
+            &mut vault_keys_required,
+            &mut BTreeSet::new(),
+        );
+        vault_keys_required.iter().for_each(|(key, _)| {
+            vault_keys.insert(*key, index);
+        });
+        keys_required.extend(vault_keys_required);
+    }
+
+    let mut states = HashMap::new();
+    states.insert((BTreeSet::new(), start_points), 0);
+    find_shortest_path_to_all_keys_robots(grid, &distances, &keys_required, &vault_keys, &states)
+}
+
+fn update_grid(grid: &mut Grid<CellType>) {
+    let current_coordinate = grid.find_item(&CellType::Entrance).unwrap();
+    grid.set(current_coordinate, CellType::Wall);
+    for direction in Direction::get_cardinals() {
+        if let Some(neighbour) = current_coordinate.get_next_in_direction(direction) {
+            grid.set(neighbour, CellType::Wall);
+        }
+    }
+
+    for direction in Direction::get_intercardinals() {
+        if let Some(neighbour) = current_coordinate.get_next_in_direction(direction) {
+            grid.set(neighbour, CellType::Entrance);
+        }
+    }
 }
 
 // Does DFS, storing the keys required to obtain each key in keys_required
@@ -171,6 +232,69 @@ fn find_shortest_path_to_all_keys(
     find_shortest_path_to_all_keys(grid, distances, keys_required, &next_states)
 }
 
+// Performs breadth first search
+// Uses states to ensure no redundant paths are searched
+fn find_shortest_path_to_all_keys_robots(
+    grid: &Grid<CellType>,
+    distances: &HashMap<Coordinate, HashMap<Coordinate, usize>>,
+    keys_required: &HashMap<char, BTreeSet<char>>,
+    vault_keys: &HashMap<char, usize>,
+    states: &HashMap<(BTreeSet<char>, Vec<Coordinate>), usize>,
+) -> usize {
+    // Initialise next states
+    let mut next_states: HashMap<(BTreeSet<char>, Vec<Coordinate>), usize> = HashMap::new();
+
+    for ((keys_collected, current_locations), distance) in states {
+        let possible_next_keys: Vec<char> = keys_required
+            .iter()
+            .filter(|(key, requirements)| {
+                !keys_collected.contains(key) && requirements.is_subset(keys_collected)
+            })
+            .map(|(key, _)| *key)
+            .collect();
+
+        // If there are no more keys to pick up, then this is the base case - all states have the same length, we have all keys
+        // Return the minimum path length from amongst the states
+        if possible_next_keys.is_empty() {
+            return *states.iter().map(|x| x.1).min().unwrap();
+        }
+
+        // Find potential next keys
+        for key in possible_next_keys {
+            // Get the location of the key and calculate the path len
+            let key_location = grid.find_item(&CellType::Key(key)).unwrap();
+
+            // Find which robot to move
+            let robot_number = *vault_keys.get(&key).unwrap();
+
+            let distances_from_current = distances.get(&current_locations[robot_number]).unwrap();
+
+            let new_path_len = distance + distances_from_current.get(&key_location).unwrap();
+
+            // Create the new state with the key inserted
+            let mut new_collected = keys_collected.clone();
+            new_collected.insert(key);
+            let mut new_locations = current_locations.clone();
+            new_locations[robot_number] = key_location;
+
+            let new_state = (new_collected, new_locations);
+
+            // Add the new state to the table for the next iteration
+            // Keep the minimum path length if it already exists
+            if let Some(other_state_dist) = next_states.get(&new_state) {
+                if new_path_len < *other_state_dist {
+                    next_states.insert(new_state, new_path_len);
+                }
+            } else {
+                next_states.insert(new_state, new_path_len);
+            }
+        }
+    }
+
+    // Iterate using the next set of states
+    find_shortest_path_to_all_keys_robots(grid, distances, keys_required, vault_keys, &next_states)
+}
+
 fn parse_input(input: &str) -> Grid<CellType> {
     let mut grid = Grid::new();
     for line in input.lines() {
@@ -219,6 +343,7 @@ impl Display for CellType {
 mod tests {
     use super::*;
     const TESTINPUT: &str = include_str!("testinput.txt");
+    const TESTINPUT2: &str = include_str!("testinput2.txt");
 
     #[test]
     fn part_1_test() {
@@ -228,7 +353,7 @@ mod tests {
 
     #[test]
     fn part_2_test() {
-        let input = parse_input(TESTINPUT);
-        assert_eq!(part_2(&input), 5);
+        let mut input = parse_input(TESTINPUT2);
+        assert_eq!(part_2(&mut input), 24);
     }
 }
