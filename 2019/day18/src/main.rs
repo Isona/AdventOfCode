@@ -1,11 +1,12 @@
-use std::{
-    collections::{BTreeSet, HashMap, HashSet},
-    fmt::Display,
-    mem::discriminant,
-};
-
 use aoc_lib::{Coordinate, Direction, Grid};
 use petgraph::{algo::dijkstra, prelude::UnGraphMap};
+use rustc_hash::{FxHashMap, FxHashSet};
+use std::{
+    collections::{BTreeMap, HashMap},
+    fmt::Display,
+    mem::discriminant,
+    ops::{Shl, Shr},
+};
 
 const INPUT: &str = include_str!("input.txt");
 
@@ -41,19 +42,21 @@ fn part_1(grid: &Grid<CellType>) -> usize {
     let current_coordinate = grid.find_item(&CellType::Entrance).unwrap();
 
     // Find the distances from the start point and all keys to all other points
-    let mut distances = HashMap::new();
+    let mut distances = FxHashMap::default();
     distances.insert(
         current_coordinate,
         dijkstra(&graph, current_coordinate, None, |_| 1),
     );
 
-    for key in grid.find_all_by(|x| discriminant(x) == discriminant(&CellType::Key('a'))) {
-        distances.insert(key, dijkstra(&graph, key, None, |_| 1));
+    let key_locations = get_key_locations(grid);
+    for key in &key_locations {
+        distances.insert(*key, dijkstra(&graph, *key, None, |_| 1));
     }
 
-    let mut visited = HashSet::from([current_coordinate]);
-    let mut keys_required = HashMap::new();
-    let mut current_doors = BTreeSet::new();
+    let mut visited = FxHashSet::default();
+    visited.insert(current_coordinate);
+    let mut keys_required = FxHashMap::default();
+    let mut current_doors = 0;
 
     get_key_requirements(
         grid,
@@ -63,12 +66,10 @@ fn part_1(grid: &Grid<CellType>) -> usize {
         &mut current_doors,
     );
 
-    println!("{keys_required:?}");
+    let mut states = FxHashMap::default();
+    states.insert((0, current_coordinate), 0);
 
-    let mut states = HashMap::new();
-    states.insert((BTreeSet::new(), current_coordinate), 0);
-
-    find_shortest_path_to_all_keys(grid, &distances, &keys_required, &states)
+    find_shortest_path_to_all_keys(&distances, &key_locations, &keys_required, &states)
 }
 
 fn part_2(grid: &mut Grid<CellType>) -> usize {
@@ -86,28 +87,32 @@ fn part_2(grid: &mut Grid<CellType>) -> usize {
         }
     }
 
-    // Find the distances from the start point and all keys to all other points
-    let mut distances = HashMap::new();
-    for start_point in grid.find_all(&CellType::Entrance) {
-        distances.insert(start_point, dijkstra(&graph, start_point, None, |_| 1));
-    }
-
-    for key in grid.find_all_by(|x| discriminant(x) == discriminant(&CellType::Key('a'))) {
-        distances.insert(key, dijkstra(&graph, key, None, |_| 1));
-    }
-
+    // Find the distances from start points to all other points
     let start_points: Vec<Coordinate> = grid.find_all(&CellType::Entrance).collect();
-    let mut vault_keys = HashMap::new();
-    let mut keys_required = HashMap::new();
+    let mut distances = FxHashMap::default();
+    for start_point in &start_points {
+        distances.insert(*start_point, dijkstra(&graph, *start_point, None, |_| 1));
+    }
+
+    // Find distances from keys to all other points
+    let key_locations = get_key_locations(grid);
+    for key in &key_locations {
+        distances.insert(*key, dijkstra(&graph, *key, None, |_| 1));
+    }
+
+    let mut vault_keys = FxHashMap::default();
+    let mut keys_required = FxHashMap::default();
 
     for (index, start_point) in start_points.iter().enumerate() {
-        let mut vault_keys_required = HashMap::new();
+        let mut vault_keys_required = FxHashMap::default();
+        let mut visited = FxHashSet::default();
+        visited.insert(*start_point);
         get_key_requirements(
             grid,
             *start_point,
-            &mut HashSet::from([*start_point]),
+            &mut visited,
             &mut vault_keys_required,
-            &mut BTreeSet::new(),
+            &mut 0,
         );
         vault_keys_required.iter().for_each(|(key, _)| {
             vault_keys.insert(*key, index);
@@ -115,11 +120,20 @@ fn part_2(grid: &mut Grid<CellType>) -> usize {
         keys_required.extend(vault_keys_required);
     }
 
-    let mut states = HashMap::new();
-    states.insert((BTreeSet::new(), start_points), 0);
-    find_shortest_path_to_all_keys_robots(grid, &distances, &keys_required, &vault_keys, &states)
+    let mut states = FxHashMap::default();
+    let start_hashed = hash_coords(&start_points);
+    states.insert((0, start_hashed), 0);
+    find_shortest_path_to_all_keys_robots(
+        &distances,
+        &key_locations,
+        &keys_required,
+        &vault_keys,
+        states,
+    )
 }
 
+// Update the grid for part 2
+// Replace .../.@./... with @#@/###/@#@
 fn update_grid(grid: &mut Grid<CellType>) {
     let current_coordinate = grid.find_item(&CellType::Entrance).unwrap();
     grid.set(current_coordinate, CellType::Wall);
@@ -140,18 +154,18 @@ fn update_grid(grid: &mut Grid<CellType>) {
 fn get_key_requirements(
     grid: &Grid<CellType>,
     current_location: Coordinate,
-    visited: &mut HashSet<Coordinate>,
-    keys_required: &mut HashMap<char, BTreeSet<char>>,
-    current_doors: &mut BTreeSet<char>,
+    visited: &mut FxHashSet<Coordinate>,
+    keys_required: &mut FxHashMap<usize, usize>,
+    current_doors: &mut usize,
 ) {
     let current_value = grid.get(current_location);
 
     match current_value {
         CellType::Door(door) => {
-            current_doors.insert(*door);
+            *current_doors += door;
         }
         CellType::Key(key) => {
-            keys_required.insert(*key, current_doors.clone());
+            keys_required.insert(*key, *current_doors);
         }
         _ => {}
     }
@@ -172,26 +186,27 @@ fn get_key_requirements(
     }
 
     if let CellType::Door(door) = current_value {
-        current_doors.remove(door);
+        *current_doors -= door;
     }
 }
 
 // Performs breadth first search
 // Uses states to ensure no redundant paths are searched
 fn find_shortest_path_to_all_keys(
-    grid: &Grid<CellType>,
-    distances: &HashMap<Coordinate, HashMap<Coordinate, usize>>,
-    keys_required: &HashMap<char, BTreeSet<char>>,
-    states: &HashMap<(BTreeSet<char>, Coordinate), usize>,
+    distances: &FxHashMap<Coordinate, HashMap<Coordinate, usize>>,
+    key_locations: &Vec<Coordinate>,
+    keys_required: &FxHashMap<usize, usize>,
+    states: &FxHashMap<(usize, Coordinate), usize>,
 ) -> usize {
     // Initialise next states
-    let mut next_states: HashMap<(BTreeSet<char>, Coordinate), usize> = HashMap::new();
+    let mut next_states: FxHashMap<(usize, Coordinate), usize> = FxHashMap::default();
 
     for ((keys_collected, current_location), distance) in states {
-        let possible_next_keys: Vec<char> = keys_required
+        let possible_next_keys: Vec<usize> = keys_required
             .iter()
             .filter(|(key, requirements)| {
-                !keys_collected.contains(key) && requirements.is_subset(keys_collected)
+                (*keys_collected & **key == 0)
+                    && (*requirements & *keys_collected) == **requirements
             })
             .map(|(key, _)| *key)
             .collect();
@@ -208,13 +223,11 @@ fn find_shortest_path_to_all_keys(
         // Find potential next keys
         for key in possible_next_keys {
             // Get the location of the key and calculate the path len
-            let key_location = grid.find_item(&CellType::Key(key)).unwrap();
+            let key_location = key_locations[key.ilog2() as usize];
             let new_path_len = distance + distances_from_current.get(&key_location).unwrap();
 
             // Create the new state with the key inserted
-            let mut new_state = keys_collected.clone();
-            new_state.insert(key);
-            let new_state = (new_state, key_location);
+            let new_state = (keys_collected + key, key_location);
 
             // Add the new state to the table for the next iteration
             // Keep the minimum path length if it already exists
@@ -229,26 +242,27 @@ fn find_shortest_path_to_all_keys(
     }
 
     // Iterate using the next set of states
-    find_shortest_path_to_all_keys(grid, distances, keys_required, &next_states)
+    find_shortest_path_to_all_keys(distances, key_locations, keys_required, &next_states)
 }
 
 // Performs breadth first search
 // Uses states to ensure no redundant paths are searched
 fn find_shortest_path_to_all_keys_robots(
-    grid: &Grid<CellType>,
-    distances: &HashMap<Coordinate, HashMap<Coordinate, usize>>,
-    keys_required: &HashMap<char, BTreeSet<char>>,
-    vault_keys: &HashMap<char, usize>,
-    states: &HashMap<(BTreeSet<char>, Vec<Coordinate>), usize>,
+    distances: &FxHashMap<Coordinate, HashMap<Coordinate, usize>>,
+    key_locations: &Vec<Coordinate>,
+    keys_required: &FxHashMap<usize, usize>,
+    vault_keys: &FxHashMap<usize, usize>,
+    mut states: FxHashMap<(usize, u64), usize>,
 ) -> usize {
     // Initialise next states
-    let mut next_states: HashMap<(BTreeSet<char>, Vec<Coordinate>), usize> = HashMap::new();
+    let mut next_states: FxHashMap<(usize, u64), usize> = FxHashMap::default();
 
-    for ((keys_collected, current_locations), distance) in states {
-        let possible_next_keys: Vec<char> = keys_required
+    for ((keys_collected, current_locations), distance) in states.iter_mut() {
+        let possible_next_keys: Vec<usize> = keys_required
             .iter()
             .filter(|(key, requirements)| {
-                !keys_collected.contains(key) && requirements.is_subset(keys_collected)
+                (keys_collected & **key != **key)
+                    && (*requirements & keys_collected) == **requirements
             })
             .map(|(key, _)| *key)
             .collect();
@@ -262,20 +276,20 @@ fn find_shortest_path_to_all_keys_robots(
         // Find potential next keys
         for key in possible_next_keys {
             // Get the location of the key and calculate the path len
-            let key_location = grid.find_item(&CellType::Key(key)).unwrap();
+            let key_location = key_locations[key.ilog2() as usize];
 
             // Find which robot to move
             let robot_number = *vault_keys.get(&key).unwrap();
 
-            let distances_from_current = distances.get(&current_locations[robot_number]).unwrap();
+            let distances_from_current = distances
+                .get(&get_coord_from_hash(*current_locations, robot_number))
+                .unwrap();
 
-            let new_path_len = distance + distances_from_current.get(&key_location).unwrap();
+            let new_path_len = *distance + distances_from_current.get(&key_location).unwrap();
 
             // Create the new state with the key inserted
-            let mut new_collected = keys_collected.clone();
-            new_collected.insert(key);
-            let mut new_locations = current_locations.clone();
-            new_locations[robot_number] = key_location;
+            let new_collected = keys_collected + key;
+            let new_locations = set_index_in_hash(*current_locations, key_location, robot_number);
 
             let new_state = (new_collected, new_locations);
 
@@ -292,7 +306,13 @@ fn find_shortest_path_to_all_keys_robots(
     }
 
     // Iterate using the next set of states
-    find_shortest_path_to_all_keys_robots(grid, distances, keys_required, vault_keys, &next_states)
+    find_shortest_path_to_all_keys_robots(
+        distances,
+        key_locations,
+        keys_required,
+        vault_keys,
+        next_states,
+    )
 }
 
 fn parse_input(input: &str) -> Grid<CellType> {
@@ -304,12 +324,67 @@ fn parse_input(input: &str) -> Grid<CellType> {
     grid
 }
 
+// Finds all the keys in the grid and returns a vector of them in order
+// Can be indexed into with: locations[key.ilog2()]
+fn get_key_locations(grid: &Grid<CellType>) -> Vec<Coordinate> {
+    let mut key_locations: BTreeMap<usize, Coordinate> = BTreeMap::new();
+
+    let initial_key_locations =
+        grid.find_all_by(|x| discriminant(x) == discriminant(&CellType::Key(1)));
+
+    for key_location in initial_key_locations {
+        let value = match grid.get(key_location) {
+            CellType::Key(key_value) => *key_value,
+            _ => panic!(),
+        };
+        key_locations.insert(value, key_location);
+    }
+
+    key_locations.values().copied().collect()
+}
+
+// We know that the grids in the input are 81x81
+// And the tests are all smaller
+// We can compress 4 coordinates into 8 * 7 bit numbers = 1 64 bit number
+fn hash_coords(coordinates: &[Coordinate]) -> u64 {
+    assert_eq!(coordinates.len(), 4);
+    let mut output = 0;
+    for coordinate in coordinates {
+        output = output.shl(14);
+        output += coordinate.x.shl(7);
+        output += coordinate.y;
+    }
+
+    output.try_into().unwrap()
+}
+
+// Recover the coordinate at the specified index from the hash
+fn get_coord_from_hash(hashed: u64, index: usize) -> Coordinate {
+    Coordinate {
+        x: (hashed.shr(7 + 14 * (3 - index)) % 128).try_into().unwrap(),
+        y: (hashed.shr(14 * (3 - index)) % 128).try_into().unwrap(),
+    }
+}
+
+// Change a coordinate at the specified position in the hash
+fn set_index_in_hash(hashed: u64, coord: Coordinate, index: usize) -> u64 {
+    // Set the bits for that index to 0 ANDing with a mask
+    // Calculate the mask by taking 14 ones, left shift them to the correct location
+    let mask: u64 = !(0x3fffu64.shl(14 * (3 - index)));
+    let interim = hashed & mask;
+
+    // Calculate the hashed coordinate value and left shift it to the correct place
+    let coord_value: u64 = (coord.x.shl(7) as u64 + coord.y as u64).shl(14 * (3 - index));
+
+    interim + coord_value
+}
+
 #[derive(Default, Eq, PartialEq, Copy, Clone, Debug)]
 enum CellType {
     #[default]
     Empty,
-    Door(char),
-    Key(char),
+    Door(usize),
+    Key(usize),
     Entrance,
     Wall,
 }
@@ -320,8 +395,8 @@ impl From<char> for CellType {
             '#' => Self::Wall,
             '.' => Self::Empty,
             '@' => Self::Entrance,
-            'A'..='Z' => Self::Door(value.to_ascii_lowercase()),
-            'a'..='z' => Self::Key(value),
+            'A'..='Z' => Self::Door(1 << (value.to_ascii_lowercase() as usize - 97)),
+            'a'..='z' => Self::Key(1 << (value as usize - 97)),
             _ => panic!(),
         }
     }
@@ -355,5 +430,19 @@ mod tests {
     fn part_2_test() {
         let mut input = parse_input(TESTINPUT2);
         assert_eq!(part_2(&mut input), 24);
+    }
+
+    #[test]
+    fn coord_hash_test() {
+        let coord1 = Coordinate::new(1, 2);
+        let coord2 = Coordinate::new(3, 4);
+        let coord3 = Coordinate::new(5, 6);
+        let coord4 = Coordinate::new(7, 8);
+
+        let hashed_coords = hash_coords(&[coord1, coord2, coord3, coord4]);
+        assert_eq!(get_coord_from_hash(hashed_coords, 0), coord1);
+        assert_eq!(get_coord_from_hash(hashed_coords, 1), coord2);
+        assert_eq!(get_coord_from_hash(hashed_coords, 2), coord3);
+        assert_eq!(get_coord_from_hash(hashed_coords, 3), coord4);
     }
 }
