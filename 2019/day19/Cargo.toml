@@ -1,0 +1,11 @@
+[package]
+name = "day19"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+intcode = { path = "../intcode" }
+aoc_lib = { path = "../../aoc_lib" }
+
+[lints]
+workspace = true

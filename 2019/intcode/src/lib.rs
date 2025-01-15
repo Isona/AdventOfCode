@@ -17,7 +17,7 @@ impl IntCodePC {
             .split(',')
             .map(|x| x.parse().unwrap())
             .collect();
-        data.resize(65536, 0);
+        data.resize(4000, 0);
 
         Self {
             data: data.clone(),
