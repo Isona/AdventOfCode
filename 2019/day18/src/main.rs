@@ -43,15 +43,11 @@ fn part_1(grid: &Grid<CellType>) -> usize {
     let current_coordinate = grid.find_item(&CellType::Entrance).unwrap();
 
     // Find the distances from the start point and all keys to all other points
-    let mut distances = FxHashMap::default();
-    distances.insert(
-        current_coordinate,
-        dijkstra(&graph, current_coordinate, None, |_| 1),
-    );
+    let mut distances = Vec::default();
 
     let key_locations = get_key_locations(grid);
-    for key in &key_locations {
-        distances.insert(*key, dijkstra(&graph, *key, None, |_| 1));
+    for key_location in key_locations.iter() {
+        distances.push(dijkstra(&graph, *key_location, None, |_| 1));
     }
 
     let mut visited = grid.create_visited_list();
@@ -91,17 +87,14 @@ fn part_2(grid: &mut Grid<CellType>) -> usize {
         }
     }
 
-    // Find the distances from start points to all other points
+
     let start_points: Vec<Coordinate> = grid.find_all(&CellType::Entrance).collect();
-    let mut distances = FxHashMap::default();
-    for start_point in &start_points {
-        distances.insert(*start_point, dijkstra(&graph, *start_point, None, |_| 1));
-    }
 
     // Find distances from keys to all other points
+    let mut distances = Vec::default();
     let key_locations = get_key_locations(grid);
-    for key in &key_locations {
-        distances.insert(*key, dijkstra(&graph, *key, None, |_| 1));
+    for key_location in key_locations.iter() {
+        distances.push(dijkstra(&graph, *key_location, None, |_| 1));
     }
 
     let mut vault_keys = Vec::new();
@@ -199,7 +192,7 @@ fn get_key_requirements(
 // Performs breadth first search
 // Uses states to ensure no redundant paths are searched
 fn find_shortest_path_to_all_keys(
-    distances: &FxHashMap<Coordinate, HashMap<Coordinate, usize>>,
+    distances: &Vec<HashMap<Coordinate, usize>>,
     key_locations: &Vec<Coordinate>,
     keys_required: &Vec<usize>,
     states: &FxHashMap<(usize, Coordinate), usize>,
@@ -224,14 +217,11 @@ fn find_shortest_path_to_all_keys(
             return *states.iter().map(|x| x.1).min().unwrap();
         }
 
-        // Get the dijkstra results for the current location
-        let distances_from_current = distances.get(current_location).unwrap();
-
         // Find potential next keys
         for key in possible_next_keys {
             // Get the location of the key and calculate the path len
             let key_location = key_locations[key.ilog2() as usize];
-            let new_path_len = distance + distances_from_current.get(&key_location).unwrap();
+            let new_path_len = distance + distances[key.ilog2() as usize].get(&current_location).unwrap();
 
             // Create the new state with the key inserted
             let new_state = (keys_collected + key, key_location);
@@ -255,7 +245,7 @@ fn find_shortest_path_to_all_keys(
 // Performs breadth first search
 // Uses states to ensure no redundant paths are searched
 fn find_shortest_path_to_all_keys_robots(
-    distances: &FxHashMap<Coordinate, HashMap<Coordinate, usize>>,
+    distances: &Vec<HashMap<Coordinate, usize>>,
     key_locations: &Vec<Coordinate>,
     keys_required: &Vec<usize>,
     vault_keys: &Vec<BitVec>,
@@ -299,14 +289,8 @@ fn find_shortest_path_to_all_keys_robots(
                 })
                 .unwrap();
 
-            // TODO: rather than do this, we can store this as "distances_to_next" because the graph is undirected
-            // Then store them in a vector indexed by the key value (we can skip doing dijkstra on start locations now)
-            // This removes a *lot* of hashing
-            let distances_from_current = distances
-                .get(&get_coord_from_hash(*current_locations, robot_number))
-                .unwrap();
-
-            let new_path_len = *distance + distances_from_current.get(&key_location).unwrap();
+            let current_location = get_coord_from_hash(*current_locations, robot_number);
+            let new_path_len = *distance + distances[key.ilog2() as usize].get(&current_location).unwrap();
 
             // Create the new state with the key inserted
             let new_collected = keys_collected + key;
