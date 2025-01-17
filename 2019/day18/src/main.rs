@@ -1,6 +1,6 @@
-use aoc_lib::{Coordinate, Direction, Grid};
+use aoc_lib::{Coordinate, Direction, Grid, Visited};
 use petgraph::{algo::dijkstra, prelude::UnGraphMap};
-use rustc_hash::{FxHashMap, FxHashSet};
+use rustc_hash::FxHashMap;
 use std::{
     collections::{BTreeMap, HashMap},
     fmt::Display,
@@ -53,8 +53,8 @@ fn part_1(grid: &Grid<CellType>) -> usize {
         distances.insert(*key, dijkstra(&graph, *key, None, |_| 1));
     }
 
-    let mut visited = FxHashSet::default();
-    visited.insert(current_coordinate);
+    let mut visited = grid.create_visited_list();
+    visited.set(&current_coordinate, true);
     let mut keys_required = FxHashMap::default();
     let mut current_doors = 0;
 
@@ -105,8 +105,8 @@ fn part_2(grid: &mut Grid<CellType>) -> usize {
 
     for (index, start_point) in start_points.iter().enumerate() {
         let mut vault_keys_required = FxHashMap::default();
-        let mut visited = FxHashSet::default();
-        visited.insert(*start_point);
+        let mut visited = grid.create_visited_list();
+        visited.set(start_point, true);
         get_key_requirements(
             grid,
             *start_point,
@@ -154,7 +154,7 @@ fn update_grid(grid: &mut Grid<CellType>) {
 fn get_key_requirements(
     grid: &Grid<CellType>,
     current_location: Coordinate,
-    visited: &mut FxHashSet<Coordinate>,
+    visited: &mut Visited,
     keys_required: &mut FxHashMap<usize, usize>,
     current_doors: &mut usize,
 ) {
@@ -174,7 +174,7 @@ fn get_key_requirements(
         .get_cardinal_neighbours(current_location)
         .filter(|neighbour| neighbour.value != &CellType::Wall)
     {
-        if visited.insert(neighbour.location) {
+        if !visited.set(&neighbour.location, true) {
             get_key_requirements(
                 grid,
                 neighbour.location,

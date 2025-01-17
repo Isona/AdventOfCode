@@ -1,6 +1,6 @@
 use core::fmt;
 
-use crate::{coordinate::Coordinate, direction::Direction};
+use crate::{coordinate::Coordinate, direction::Direction, Visited};
 
 #[derive(Clone, Default)]
 pub struct Grid<T> {
@@ -197,6 +197,10 @@ impl<T> Grid<T> {
         }
 
         view
+    }
+
+    pub fn create_visited_list(&self) -> Visited {
+        Visited::new(self.row_len, self.row_count)
     }
 }
 
