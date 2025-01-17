@@ -1,4 +1,5 @@
 use aoc_lib::{Coordinate, Direction, Grid, Visited};
+use bitvec::prelude::*;
 use petgraph::{algo::dijkstra, prelude::UnGraphMap};
 use rustc_hash::FxHashMap;
 use std::{
@@ -57,6 +58,7 @@ fn part_1(grid: &Grid<CellType>) -> usize {
     visited.set(&current_coordinate, true);
     let mut keys_required = FxHashMap::default();
     let mut current_doors = 0;
+    let mut keys_visited = bitvec![0; key_locations.len()];
 
     get_key_requirements(
         grid,
@@ -64,6 +66,7 @@ fn part_1(grid: &Grid<CellType>) -> usize {
         &mut visited,
         &mut keys_required,
         &mut current_doors,
+        &mut keys_visited,
     );
 
     let mut states = FxHashMap::default();
@@ -100,12 +103,13 @@ fn part_2(grid: &mut Grid<CellType>) -> usize {
         distances.insert(*key, dijkstra(&graph, *key, None, |_| 1));
     }
 
-    let mut vault_keys = FxHashMap::default();
+    let mut vault_keys = Vec::new();
     let mut keys_required = FxHashMap::default();
 
-    for (index, start_point) in start_points.iter().enumerate() {
+    for start_point in start_points.iter() {
         let mut vault_keys_required = FxHashMap::default();
         let mut visited = grid.create_visited_list();
+        let mut keys_visited = bitvec![0; key_locations.len()];
         visited.set(start_point, true);
         get_key_requirements(
             grid,
@@ -113,10 +117,9 @@ fn part_2(grid: &mut Grid<CellType>) -> usize {
             &mut visited,
             &mut vault_keys_required,
             &mut 0,
+            &mut keys_visited,
         );
-        vault_keys_required.iter().for_each(|(key, _)| {
-            vault_keys.insert(*key, index);
-        });
+        vault_keys.push(keys_visited);
         keys_required.extend(vault_keys_required);
     }
 
@@ -157,6 +160,7 @@ fn get_key_requirements(
     visited: &mut Visited,
     keys_required: &mut FxHashMap<usize, usize>,
     current_doors: &mut usize,
+    keys_visited: &mut BitVec,
 ) {
     let current_value = grid.get(current_location);
 
@@ -166,6 +170,7 @@ fn get_key_requirements(
         }
         CellType::Key(key) => {
             keys_required.insert(*key, *current_doors);
+            keys_visited.set(key.ilog2().try_into().unwrap(), true);
         }
         _ => {}
     }
@@ -181,6 +186,7 @@ fn get_key_requirements(
                 visited,
                 keys_required,
                 current_doors,
+                keys_visited,
             );
         }
     }
@@ -251,7 +257,7 @@ fn find_shortest_path_to_all_keys_robots(
     distances: &FxHashMap<Coordinate, HashMap<Coordinate, usize>>,
     key_locations: &Vec<Coordinate>,
     keys_required: &FxHashMap<usize, usize>,
-    vault_keys: &FxHashMap<usize, usize>,
+    vault_keys: &Vec<BitVec>,
     mut states: FxHashMap<(usize, u64), usize>,
 ) -> usize {
     // Initialise next states
@@ -279,7 +285,20 @@ fn find_shortest_path_to_all_keys_robots(
             let key_location = key_locations[key.ilog2() as usize];
 
             // Find which robot to move
-            let robot_number = *vault_keys.get(&key).unwrap();
+            let robot_number = vault_keys
+                .iter()
+                .enumerate()
+                .find_map(|(robot_number, keys_in_vault)| {
+                    if *keys_in_vault
+                        .get::<usize>(key.ilog2().try_into().unwrap())
+                        .unwrap()
+                    {
+                        Some(robot_number)
+                    } else {
+                        None
+                    }
+                })
+                .unwrap();
 
             let distances_from_current = distances
                 .get(&get_coord_from_hash(*current_locations, robot_number))
