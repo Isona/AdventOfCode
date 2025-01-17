@@ -56,7 +56,7 @@ fn part_1(grid: &Grid<CellType>) -> usize {
 
     let mut visited = grid.create_visited_list();
     visited.set(&current_coordinate, true);
-    let mut keys_required = FxHashMap::default();
+    let mut keys_required = vec![0; key_locations.len()];
     let mut current_doors = 0;
     let mut keys_visited = bitvec![0; key_locations.len()];
 
@@ -69,6 +69,7 @@ fn part_1(grid: &Grid<CellType>) -> usize {
         &mut keys_visited,
     );
 
+    println!("{keys_required:?}");
     let mut states = FxHashMap::default();
     states.insert((0, current_coordinate), 0);
 
@@ -104,10 +105,10 @@ fn part_2(grid: &mut Grid<CellType>) -> usize {
     }
 
     let mut vault_keys = Vec::new();
-    let mut keys_required = FxHashMap::default();
+    let mut keys_required = vec![0; key_locations.len()];
 
     for start_point in start_points.iter() {
-        let mut vault_keys_required = FxHashMap::default();
+        //let mut vault_keys_required = FxHashMap::default();
         let mut visited = grid.create_visited_list();
         let mut keys_visited = bitvec![0; key_locations.len()];
         visited.set(start_point, true);
@@ -115,12 +116,11 @@ fn part_2(grid: &mut Grid<CellType>) -> usize {
             grid,
             *start_point,
             &mut visited,
-            &mut vault_keys_required,
+            &mut keys_required,
             &mut 0,
             &mut keys_visited,
         );
         vault_keys.push(keys_visited);
-        keys_required.extend(vault_keys_required);
     }
 
     let mut states = FxHashMap::default();
@@ -158,7 +158,7 @@ fn get_key_requirements(
     grid: &Grid<CellType>,
     current_location: Coordinate,
     visited: &mut Visited,
-    keys_required: &mut FxHashMap<usize, usize>,
+    keys_required: &mut Vec<usize>,
     current_doors: &mut usize,
     keys_visited: &mut BitVec,
 ) {
@@ -169,8 +169,8 @@ fn get_key_requirements(
             *current_doors += door;
         }
         CellType::Key(key) => {
-            keys_required.insert(*key, *current_doors);
-            keys_visited.set(key.ilog2().try_into().unwrap(), true);
+            keys_required[key.ilog2() as usize] = *current_doors;
+            keys_visited.set(key.ilog2() as usize, true);
         }
         _ => {}
     }
@@ -201,25 +201,26 @@ fn get_key_requirements(
 fn find_shortest_path_to_all_keys(
     distances: &FxHashMap<Coordinate, HashMap<Coordinate, usize>>,
     key_locations: &Vec<Coordinate>,
-    keys_required: &FxHashMap<usize, usize>,
+    keys_required: &Vec<usize>,
     states: &FxHashMap<(usize, Coordinate), usize>,
 ) -> usize {
     // Initialise next states
     let mut next_states: FxHashMap<(usize, Coordinate), usize> = FxHashMap::default();
 
     for ((keys_collected, current_location), distance) in states {
-        let possible_next_keys: Vec<usize> = keys_required
+        let mut possible_next_keys = keys_required
             .iter()
+            .enumerate()
             .filter(|(key, requirements)| {
-                (*keys_collected & **key == 0)
+                (*keys_collected & 2usize.pow((*key).try_into().unwrap()) == 0)
                     && (*requirements & *keys_collected) == **requirements
             })
-            .map(|(key, _)| *key)
-            .collect();
+            .map(|(key, _)| 2usize.pow((key).try_into().unwrap()))
+            .peekable();
 
         // If there are no more keys to pick up, then this is the base case - all states have the same length, we have all keys
         // Return the minimum path length from amongst the states
-        if possible_next_keys.is_empty() {
+        if possible_next_keys.peek().is_none() {
             return *states.iter().map(|x| x.1).min().unwrap();
         }
 
@@ -256,7 +257,7 @@ fn find_shortest_path_to_all_keys(
 fn find_shortest_path_to_all_keys_robots(
     distances: &FxHashMap<Coordinate, HashMap<Coordinate, usize>>,
     key_locations: &Vec<Coordinate>,
-    keys_required: &FxHashMap<usize, usize>,
+    keys_required: &Vec<usize>,
     vault_keys: &Vec<BitVec>,
     mut states: FxHashMap<(usize, u64), usize>,
 ) -> usize {
@@ -264,18 +265,19 @@ fn find_shortest_path_to_all_keys_robots(
     let mut next_states: FxHashMap<(usize, u64), usize> = FxHashMap::default();
 
     for ((keys_collected, current_locations), distance) in states.iter_mut() {
-        let possible_next_keys: Vec<usize> = keys_required
+        let mut possible_next_keys = keys_required
             .iter()
+            .enumerate()
             .filter(|(key, requirements)| {
-                (keys_collected & **key != **key)
-                    && (*requirements & keys_collected) == **requirements
+                (*keys_collected & 2usize.pow((*key).try_into().unwrap()) == 0)
+                    && (*requirements & *keys_collected) == **requirements
             })
-            .map(|(key, _)| *key)
-            .collect();
+            .map(|(key, _)| 2usize.pow((key).try_into().unwrap()))
+            .peekable();
 
         // If there are no more keys to pick up, then this is the base case - all states have the same length, we have all keys
         // Return the minimum path length from amongst the states
-        if possible_next_keys.is_empty() {
+        if possible_next_keys.peek().is_none() {
             return *states.iter().map(|x| x.1).min().unwrap();
         }
 
@@ -289,10 +291,7 @@ fn find_shortest_path_to_all_keys_robots(
                 .iter()
                 .enumerate()
                 .find_map(|(robot_number, keys_in_vault)| {
-                    if *keys_in_vault
-                        .get::<usize>(key.ilog2().try_into().unwrap())
-                        .unwrap()
-                    {
+                    if *keys_in_vault.get::<usize>(key.ilog2() as usize).unwrap() {
                         Some(robot_number)
                     } else {
                         None
@@ -300,6 +299,9 @@ fn find_shortest_path_to_all_keys_robots(
                 })
                 .unwrap();
 
+            // TODO: rather than do this, we can store this as "distances_to_next" because the graph is undirected
+            // Then store them in a vector indexed by the key value (we can skip doing dijkstra on start locations now)
+            // This removes a *lot* of hashing
             let distances_from_current = distances
                 .get(&get_coord_from_hash(*current_locations, robot_number))
                 .unwrap();
