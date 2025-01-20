@@ -202,6 +202,10 @@ impl<T> Grid<T> {
     pub fn create_visited_list(&self) -> Visited {
         Visited::new(self.row_len, self.row_count)
     }
+
+    pub fn is_on_edge(&self, coord: &Coordinate) -> bool {
+        coord.x == 0 || coord.y == 0 || coord.x == self.row_len - 1 || coord.y == self.row_count - 1
+    }
 }
 
 impl<T> fmt::Display for Grid<T>
