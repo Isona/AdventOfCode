@@ -87,7 +87,6 @@ fn part_2(grid: &mut Grid<CellType>) -> usize {
         }
     }
 
-
     let start_points: Vec<Coordinate> = grid.find_all(&CellType::Entrance).collect();
 
     // Find distances from keys to all other points
@@ -221,7 +220,10 @@ fn find_shortest_path_to_all_keys(
         for key in possible_next_keys {
             // Get the location of the key and calculate the path len
             let key_location = key_locations[key.ilog2() as usize];
-            let new_path_len = distance + distances[key.ilog2() as usize].get(&current_location).unwrap();
+            let new_path_len = distance
+                + distances[key.ilog2() as usize]
+                    .get(current_location)
+                    .unwrap();
 
             // Create the new state with the key inserted
             let new_state = (keys_collected + key, key_location);
@@ -290,7 +292,10 @@ fn find_shortest_path_to_all_keys_robots(
                 .unwrap();
 
             let current_location = get_coord_from_hash(*current_locations, robot_number);
-            let new_path_len = *distance + distances[key.ilog2() as usize].get(&current_location).unwrap();
+            let new_path_len = *distance
+                + distances[key.ilog2() as usize]
+                    .get(&current_location)
+                    .unwrap();
 
             // Create the new state with the key inserted
             let new_collected = keys_collected + key;
