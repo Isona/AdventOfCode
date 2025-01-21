@@ -1,4 +1,3 @@
-use aoc_lib::{Coordinate, Grid};
 use intcode::IntCodePC;
 const INPUT: &str = include_str!("input.txt");
 
@@ -18,22 +17,27 @@ fn main() {
     println!("Part 2: {part_2_answer} in {time_taken:.3} ms");
 }
 
-fn part_1(pc: &mut IntCodePC) -> usize {
-    let mut grid: Grid<i128> = Grid::new();
+fn part_1(pc: &mut IntCodePC) -> i128 {
+    let mut one_count = 0;
 
-    for y in 0..50 {
-        grid.push_row(vec![0; 50]);
+    'yloop: for y in 0..50 {
+        let mut x_found = false;
         for x in 0..50 {
-            let coord = Coordinate::new(x.try_into().unwrap(), y.try_into().unwrap());
             pc.reset_all();
+
             let value = *pc.run_with_input([x, y].into()).1.front().unwrap();
-            grid.set(coord, value);
+            if value == 1 {
+                one_count += 1;
+                if !x_found {
+                    x_found = true;
+                }
+            } else if x_found {
+                continue 'yloop;
+            }
         }
     }
 
-    println!("{grid}");
-
-    grid.find_all(&1).count()
+    one_count
 }
 
 // We want to find the corner of the right angle triangle
