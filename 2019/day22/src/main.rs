@@ -33,15 +33,19 @@ fn part_2(
     // coefficient * x ≡ goal_index % number_of_cards
     //let (coeff_bezout, card_bezout) = extended_euclid(coefficient, number_of_cards);
 
+    // a^i*x + b*(1-a^i)/(1-a)
+
     let coeff_after_iterations = mod_pow(coefficient, number_of_shuffles, number_of_cards);
     let constant_after_iterations = constant * (1 - coeff_after_iterations) / (1 - coefficient);
 
     //let goal = (goal_index - coefficient).rem_euclid(number_of_cards);
     let goal = (goal_index - constant_after_iterations).rem_euclid(number_of_cards);
 
+    // a^ix = goal mod cards
+
     //println!("{}", goal);
 
-    let (coeff_bezout, _card_bezout) = extended_euclid(coeff_after_iterations, number_of_cards);
+    let coeff_bezout = inverse(coeff_after_iterations, number_of_cards);
 
     (goal * coeff_bezout).rem_euclid(number_of_cards)
 
@@ -94,6 +98,33 @@ fn extended_euclid(a: i128, b: i128) -> (i128, i128) {
     }
 
     (old_s, old_t)
+}
+
+fn inverse(a: i128, n: i128) -> i128 {
+    let mut t = 0;
+    let mut newt = 1;
+    let mut r = n;
+    let mut newr = a;
+
+    while newr != 0 {
+        let quotient = r / newr;
+        let temp_t = t - quotient * newt;
+        t = newt;
+        newt = temp_t;
+
+        let temp_r = r - quotient * newr;
+        r = newr;
+        newr = temp_r;
+    }
+
+    if r > 1 {
+        panic!()
+    }
+    if t < 0 {
+        t += n;
+    }
+
+    t
 }
 
 fn mod_pow(mut b: i128, mut e: i128, m: i128) -> i128 {
@@ -187,5 +218,11 @@ mod tests {
             part_2(&input, current_index, number_of_cards, iterations),
             initial_index
         )
+    }
+
+    #[test]
+    fn mod_pow_test() {
+        assert_eq!(mod_pow(15, 18, 23), 12);
+        assert_eq!(mod_pow(2616, 19861, 252), 180);
     }
 }
