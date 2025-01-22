@@ -30,16 +30,22 @@ fn part_2(
     let (coefficient, constant) = get_coeff_and_constant(input, number_of_cards);
     println!("Coefficient: {coefficient}, Constant: {constant}");
 
-    let coefficient = (coefficient * number_of_shuffles).rem_euclid(number_of_cards);
-    let constant = (constant * number_of_shuffles).rem_euclid(number_of_cards);
-    println!("Coefficient: {coefficient}, Constant: {constant}");
-
     // coefficient * x ≡ goal_index % number_of_cards
-    let (coeff_bezout, card_bezout) = extended_euclid(coefficient, number_of_cards);
+    //let (coeff_bezout, card_bezout) = extended_euclid(coefficient, number_of_cards);
 
-    let goal = (goal_index - coefficient).rem_euclid(number_of_cards);
+    let coeff_after_iterations = mod_pow(coefficient, number_of_shuffles, number_of_cards);
+    let constant_after_iterations = constant * (1 - coeff_after_iterations) / (1 - coefficient);
 
-    (goal * card_bezout).rem_euclid(number_of_cards)
+    //let goal = (goal_index - coefficient).rem_euclid(number_of_cards);
+    let goal = (goal_index - constant_after_iterations).rem_euclid(number_of_cards);
+
+    //println!("{}", goal);
+
+    let (coeff_bezout, _card_bezout) = extended_euclid(coeff_after_iterations, number_of_cards);
+
+    (goal * coeff_bezout).rem_euclid(number_of_cards)
+
+    //(goal * card_bezout).rem_euclid(number_of_cards)
 }
 
 fn get_coeff_and_constant(input: &[Shuffle], number_of_cards: i128) -> (i128, i128) {
@@ -88,6 +94,22 @@ fn extended_euclid(a: i128, b: i128) -> (i128, i128) {
     }
 
     (old_s, old_t)
+}
+
+fn mod_pow(mut b: i128, mut e: i128, m: i128) -> i128 {
+    if m == 1 {
+        return 0;
+    }
+    let mut r = 1;
+    b = b.rem_euclid(m);
+    while e > 0 {
+        if e.rem_euclid(2) == 1 {
+            r = (r * b).rem_euclid(m)
+        }
+        b = (b * b).rem_euclid(m);
+        e /= 2;
+    }
+    r
 }
 
 fn parse_input(input: &str) -> Vec<Shuffle> {
@@ -139,9 +161,9 @@ mod tests {
         assert_eq!(part_2(&input, 7, 10, 1), 0);
         assert_eq!(part_2(&input, 3, 10, 1), 8);
 
-        let initial_index = 0;
-        let iterations = 1000;
-        let mut current_index = 9;
+        let initial_index = 9;
+        let iterations = 151;
+        let mut current_index = initial_index;
         for _ in 0..iterations {
             current_index = part_1(&input, current_index, 10);
         }
@@ -154,9 +176,9 @@ mod tests {
         let input = parse_input(INPUT);
         let number_of_cards = 119315717514047;
 
-        let initial_index = 0;
+        let initial_index = 5;
         let mut current_index = initial_index;
-        let iterations = 1000;
+        let iterations = 5;
         for _ in 0..iterations {
             current_index = part_1(&input, current_index, number_of_cards);
         }
