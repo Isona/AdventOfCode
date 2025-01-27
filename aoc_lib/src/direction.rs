@@ -12,39 +12,42 @@ pub enum Direction {
     SouthWest,
 }
 
+pub const CARDINALS: [Direction; 4] = [
+    Direction::North,
+    Direction::South,
+    Direction::East,
+    Direction::West,
+];
+
+pub const INTERCARDINALS: [Direction; 4] = [
+    Direction::NorthEast,
+    Direction::NorthWest,
+    Direction::SouthEast,
+    Direction::SouthWest,
+];
+
+pub const ALL_DIRECTIONS: [Direction; 8] = [
+    Direction::North,
+    Direction::South,
+    Direction::East,
+    Direction::West,
+    Direction::NorthEast,
+    Direction::NorthWest,
+    Direction::SouthEast,
+    Direction::SouthWest,
+];
+
 impl Direction {
     pub fn get_cardinals() -> impl Iterator<Item = Direction> {
-        [
-            Direction::North,
-            Direction::South,
-            Direction::East,
-            Direction::West,
-        ]
-        .into_iter()
+        CARDINALS.into_iter()
     }
 
     pub fn get_intercardinals() -> impl Iterator<Item = Direction> {
-        [
-            Direction::NorthEast,
-            Direction::NorthWest,
-            Direction::SouthEast,
-            Direction::SouthWest,
-        ]
-        .into_iter()
+        INTERCARDINALS.into_iter()
     }
 
     pub fn get_all() -> impl Iterator<Item = Direction> {
-        [
-            Direction::North,
-            Direction::South,
-            Direction::East,
-            Direction::West,
-            Direction::NorthEast,
-            Direction::NorthWest,
-            Direction::SouthEast,
-            Direction::SouthWest,
-        ]
-        .into_iter()
+        ALL_DIRECTIONS.into_iter()
     }
 
     pub fn get_opposite(&self) -> Direction {

@@ -37,21 +37,36 @@ fn part_1(input: &BitGrid) -> usize {
 }
 
 fn part_2(input: &BitGrid, iteration_count: usize) -> usize {
+    // Create working layer lists - we know that 249 is ok
+    // It takes 2 iterations to reach a new layer
     let mut layers = Vec::from([BitGrid::new_default(); 249]);
     let mut new_layers = Vec::from([BitGrid::new_default(); 249]);
+    // Set the center layer to be the start input
     layers[124] = *input;
 
     // 200 iterations
     for _ in 0..iteration_count {
+        // Loop over sets of outer, current and inner layers
+        // We don't deal with the first and last layers - that's ok, they're always empty
         for ((_, outer_layer), (index, layer), (_, inner_layer)) in
             layers.iter().enumerate().tuple_windows()
         {
+            // If all 3 layers are empty, skip this one
+            if outer_layer.is_zero() && layer.is_zero() && inner_layer.is_zero() {
+                continue;
+            }
+
             new_layers[index] = layer.do_iteration_part_2(outer_layer, inner_layer);
         }
+        // Swap the layer lists to avoid reallocating the vector
         mem::swap(&mut layers, &mut new_layers);
     }
 
-    layers.iter().map(BitGrid::get_bug_count).sum()
+    layers
+        .iter()
+        .filter(|x| !x.is_zero())
+        .map(BitGrid::get_bug_count)
+        .sum()
 }
 
 #[derive(PartialEq, Eq, Hash, Copy, Clone)]
@@ -80,12 +95,20 @@ impl BitGrid {
         Self { grid: 0 }
     }
 
+    fn is_zero(&self) -> bool {
+        self.grid == 0
+    }
+
     fn get(&self, index: usize) -> bool {
         self.grid & (2 << (GRIDSIZE - 1 - index)) != 0
     }
 
+    fn get_as_usize(&self, index: usize) -> usize {
+        self.grid >> (GRIDSIZE - index) & 1
+    }
+
     fn set(&mut self, index: usize, value: bool) {
-        if self.get(index) && !value {
+        if !value && self.get(index) {
             self.grid -= 2 << (GRIDSIZE - 1 - index);
         } else if value {
             self.grid += 2 << (GRIDSIZE - 1 - index);
@@ -112,8 +135,10 @@ impl BitGrid {
     fn do_iteration(&self) -> Self {
         let mut new_grid = BitGrid::new_default();
         for i in 0..GRIDSIZE {
-            let neighbouring_bugs = self.get_cardinal_neighbours(i).filter(|x| *x).count();
+            let neighbouring_bugs: usize = self.get_cardinal_neighbours(i).sum();
 
+            // It's only a bug if it's already a bug and neighbours = 1
+            // or if it's empty and there are exactly 1 or 2 adjacent bugs
             if (self.get(i) && neighbouring_bugs == 1)
                 || (!self.get(i) && (neighbouring_bugs == 1 || neighbouring_bugs == 2))
             {
@@ -127,10 +152,14 @@ impl BitGrid {
     fn do_iteration_part_2(&self, outer_layer: &BitGrid, inner_layer: &BitGrid) -> Self {
         let mut new_grid = BitGrid::new_default();
         for i in 0..GRIDSIZE {
+            // Skip the center, it's always empty
             if i == 12 {
                 continue;
             }
+
             let neighbouring_bugs = self.get_neighbouring_bug_count(i, outer_layer, inner_layer);
+            // It's only a bug if it's already a bug and neighbours = 1
+            // or if it's empty and there are exactly 1 or 2 adjacent bugs
             if (self.get(i) && neighbouring_bugs == 1)
                 || (!self.get(i) && (neighbouring_bugs == 1 || neighbouring_bugs == 2))
             {
@@ -141,17 +170,17 @@ impl BitGrid {
         new_grid
     }
 
-    pub fn get_cardinal_neighbours(&self, index: usize) -> impl Iterator<Item = bool> {
+    pub fn get_cardinal_neighbours(&self, index: usize) -> impl Iterator<Item = usize> {
         Direction::get_cardinals().filter_map(move |direction| self.get_neighbour(index, direction))
     }
 
-    pub fn get_neighbour(&self, index: usize, direction: Direction) -> Option<bool> {
+    pub fn get_neighbour(&self, index: usize, direction: Direction) -> Option<usize> {
         let x = index % 5;
         let y = index / 5;
 
         let new_x = match direction {
             Direction::East => {
-                if x + 1 < 5 {
+                if x != 4 {
                     x + 1
                 } else {
                     return None;
@@ -176,7 +205,7 @@ impl BitGrid {
                 }
             }
             Direction::South => {
-                if y + 1 < 5 {
+                if y != 4 {
                     y + 1
                 } else {
                     return None;
@@ -184,7 +213,7 @@ impl BitGrid {
             }
             _ => y,
         };
-        Some(self.get(new_y * 5 + new_x))
+        Some(self.get_as_usize(new_y * 5 + new_x))
     }
 
     pub fn get_neighbouring_bug_count(
@@ -211,73 +240,63 @@ impl BitGrid {
         let y = index / 5;
         let new_x = match direction {
             Direction::East => {
-                if x + 1 < 5 {
-                    x + 1
-                } else if outer_layer.get(13) {
-                    return 1;
-                } else {
-                    return 0;
+                if x == 4 {
+                    return outer_layer.get_as_usize(13);
                 }
+                x + 1
             }
             Direction::West => {
-                if x != 0 {
-                    x - 1
-                } else if outer_layer.get(11) {
-                    return 1;
-                } else {
-                    return 0;
+                if x == 0 {
+                    return outer_layer.get_as_usize(11);
                 }
+
+                x - 1
             }
             _ => x,
         };
 
         let new_y = match direction {
             Direction::North => {
-                if y != 0 {
-                    y - 1
-                } else if outer_layer.get(7) {
-                    return 1;
-                } else {
-                    return 0;
+                if y == 0 {
+                    return outer_layer.get_as_usize(7);
                 }
+                y - 1
             }
             Direction::South => {
-                if y + 1 < 5 {
-                    y + 1
-                } else if outer_layer.get(17) {
-                    return 1;
-                } else {
-                    return 0;
+                if y == 4 {
+                    return outer_layer.get_as_usize(17);
                 }
+                y + 1
             }
             _ => y,
         };
 
         let neighbour_index = new_y * 5 + new_x;
         if neighbour_index == 12 {
-            inner_layer.get_outer_edge_count(direction.get_opposite())
-        } else if self.get(neighbour_index) {
-            1
+            inner_layer.get_outer_edge_count(direction)
         } else {
-            0
+            self.get_as_usize(neighbour_index)
         }
     }
 
     pub fn get_outer_edge_count(&self, direction: Direction) -> usize {
         match direction {
-            Direction::North => [0, 1, 2, 3, 4].into_iter().filter(|i| self.get(*i)).count(),
-            Direction::South => [20, 21, 22, 23, 24]
+            Direction::South => [0, 1, 2, 3, 4]
                 .into_iter()
-                .filter(|i| self.get(*i))
-                .count(),
-            Direction::East => [4, 9, 14, 19, 24]
+                .map(|i| self.get_as_usize(i))
+                .sum(),
+            Direction::North => [20, 21, 22, 23, 24]
                 .into_iter()
-                .filter(|i| self.get(*i))
-                .count(),
-            Direction::West => [0, 5, 10, 15, 20]
+                .map(|i| self.get_as_usize(i))
+                .sum(),
+            Direction::West => [4, 9, 14, 19, 24]
                 .into_iter()
-                .filter(|i| self.get(*i))
-                .count(),
+                .map(|i| self.get_as_usize(i))
+                .sum(),
+            Direction::East => [0, 5, 10, 15, 20]
+                .into_iter()
+                .map(|i| self.get_as_usize(i))
+                .sum(),
             _ => panic!(),
         }
     }
