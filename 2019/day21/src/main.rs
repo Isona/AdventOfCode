@@ -44,28 +44,26 @@ fn part_1(pc: &mut IntCodePC) -> i128 {
 fn part_2(pc: &mut IntCodePC) -> i128 {
     pc.reset_all();
 
-    // If D and ((E AND I) OR H) AND !(A AND B AND C AND D)
-    // https://cyberchef.org/#recipe=To_Decimal('Comma',false)&input=T1IgRCBKCkFORCBFIFQKQU5EIEkgVApPUiBIIFQKQU5EIFQgSgpOT1QgQSBUCk9SIFQgSgpOT1QgVCBUCkFORCBCIFQKQU5EIEMgVApBTkQgRCBUCk5PVCBUIFQKQU5EIFQgSgpSVU4K
-    // OR D J
+    // If (E OR H) AND D AND !(A AND B AND C)
+    // https://cyberchef.org/#recipe=To_Decimal('Comma',false)&input=T1IgRCBKCkFORCBFIFQKQU5EIEkgVApPUiBIIFQKQU5EIFQgSgpOT1QgQSBUCk9SIFQgSgpOT1QgVCBUCkFORCBCIFQKQU5EIEMgVApOT1QgVCBUCkFORCBUIEoKUlVOCg
     // AND E T
     // AND I T
-    // OR H T
-    // AND T J
+    // OR H J
+    // AND D J
     // NOT A T
     // OR T J
     // NOT T T
     // AND B T
     // AND C T
-    // AND D T
     // NOT T T
     // AND T J
     // RUN
+
     let commands = VecDeque::from([
-        79, 82, 32, 68, 32, 74, 10, 65, 78, 68, 32, 69, 32, 84, 10, 65, 78, 68, 32, 73, 32, 84, 10,
-        79, 82, 32, 72, 32, 84, 10, 65, 78, 68, 32, 84, 32, 74, 10, 78, 79, 84, 32, 65, 32, 84, 10,
-        79, 82, 32, 84, 32, 74, 10, 78, 79, 84, 32, 84, 32, 84, 10, 65, 78, 68, 32, 66, 32, 84, 10,
-        65, 78, 68, 32, 67, 32, 84, 10, 65, 78, 68, 32, 68, 32, 84, 10, 78, 79, 84, 32, 84, 32, 84,
-        10, 65, 78, 68, 32, 84, 32, 74, 10, 82, 85, 78, 10,
+        65, 78, 68, 32, 69, 32, 84, 10, 65, 78, 68, 32, 73, 32, 84, 10, 79, 82, 32, 72, 32, 74, 10,
+        65, 78, 68, 32, 68, 32, 74, 10, 78, 79, 84, 32, 65, 32, 84, 10, 79, 82, 32, 84, 32, 74, 10,
+        78, 79, 84, 32, 84, 32, 84, 10, 65, 78, 68, 32, 66, 32, 84, 10, 65, 78, 68, 32, 67, 32, 84,
+        10, 78, 79, 84, 32, 84, 32, 84, 10, 65, 78, 68, 32, 84, 32, 74, 10, 82, 85, 78, 10,
     ]);
 
     let (_, output) = pc.run_with_input(commands);
