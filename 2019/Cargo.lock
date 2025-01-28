@@ -208,6 +208,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "day21"
+version = "0.1.0"
+dependencies = [
+ "intcode",
+]
+
+[[package]]
 name = "day22"
 version = "0.1.0"
 
