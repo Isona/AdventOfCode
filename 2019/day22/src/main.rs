@@ -20,30 +20,35 @@ fn part_1(input: &[Shuffle], goal_card: i128, number_of_cards: i128) -> i128 {
     (goal_card * coefficient + constant).rem_euclid(number_of_cards)
 }
 
-// 20066843390330 is too low
-// 82066653842347 is too high
 fn part_2(
     input: &[Shuffle],
     goal_index: i128,
     number_of_cards: i128,
     number_of_shuffles: i128,
 ) -> i128 {
+    // We can model the transformation after each shuffle as ax+b (a=coefficient, b=constant)
+    // After n shuffles it becomes: (a^n)x + b(1-a^n)/(1-a) mod number_of_cards
+    // To do the division we instead multiply by the modular inverse of (1-a, number_of_cards)
+
     let (coefficient, constant) = get_inverse_coeff_and_constant(input, number_of_cards);
     let coeff_after_iterations = mod_pow(coefficient, number_of_shuffles, number_of_cards);
 
-    println!("Coefficient: {coefficient}, coefficient after iterations: {coeff_after_iterations}");
+    let constant = constant.rem_euclid(number_of_cards);
 
     let constant_after_iterations = {
         if coefficient == 1 {
             constant * number_of_shuffles
         } else {
-            constant * (1 - coeff_after_iterations) / (1 - coefficient)
+            ((constant * (1 - coeff_after_iterations)).rem_euclid(number_of_cards)
+                * inverse(
+                    (1 - coefficient).rem_euclid(number_of_cards),
+                    number_of_cards,
+                ))
+            .rem_euclid(number_of_cards)
         }
     };
-    println!("Constant after iterations: {constant_after_iterations}");
 
-    ((goal_index * coeff_after_iterations).rem_euclid(number_of_cards) + constant_after_iterations)
-        .rem_euclid(number_of_cards)
+    ((goal_index * coeff_after_iterations) + constant_after_iterations).rem_euclid(number_of_cards)
 }
 
 fn get_coeff_and_constant(input: &[Shuffle], number_of_cards: i128) -> (i128, i128) {
@@ -96,7 +101,7 @@ fn get_inverse_coeff_and_constant(input: &[Shuffle], number_of_cards: i128) -> (
 fn inverse(a: i128, n: i128) -> i128 {
     let mut t = 0;
     let mut newt = 1;
-    let mut r = n;
+    let mut r: i128 = n;
     let mut newr = a;
 
     while newr != 0 {
@@ -182,54 +187,51 @@ mod tests {
     #[test]
     fn deal_new_inverse_test() {
         let input = parse_input("deal into new stack");
-        assert_eq!(part_2(&input, 1, 10, 1), 8);
-        assert_eq!(part_2(&input, 1, 10, 2), 1);
+        assert_eq!(part_2(&input, 1, 11, 1), 9);
+        assert_eq!(part_2(&input, 1, 11, 2), 1);
     }
 
     #[test]
     fn cut_inverse_test() {
         let input = parse_input("cut 3");
-        assert_eq!(part_2(&input, 2, 10, 1), 5);
-        assert_eq!(part_2(&input, 2, 10, 2), 8);
+        assert_eq!(part_2(&input, 2, 11, 1), 5);
+        assert_eq!(part_2(&input, 2, 11, 2), 8);
+        assert_eq!(part_2(&input, 9, 11, 2), 4);
     }
 
     #[test]
     fn deal_inverse_test() {
         let input = parse_input("deal with increment 3");
-        assert_eq!(part_2(&input, 1, 10, 1), 7);
-        assert_eq!(part_2(&input, 3, 10, 1), 1);
+        assert_eq!(part_2(&input, 1, 11, 1), 4);
+        assert_eq!(part_2(&input, 3, 11, 1), 1);
 
-        assert_eq!(part_2(&input, 1, 10, 2), 9);
-        assert_eq!(part_2(&input, 3, 10, 2), 7);
+        assert_eq!(part_2(&input, 1, 11, 2), 5);
+        assert_eq!(part_2(&input, 3, 11, 2), 4);
     }
 
     #[test]
     fn part_2_test() {
         let input = parse_input(TESTINPUT);
-        assert_eq!(part_2(&input, 7, 10, 1), 0);
-        assert_eq!(part_2(&input, 3, 10, 1), 8);
 
         let initial_index = 9;
-        let iterations = 1251223;
+        let iterations = 1251227;
         let mut current_index = initial_index;
         for _ in 0..iterations {
-            current_index = part_1(&input, current_index, 10);
+            current_index = part_1(&input, current_index, 11);
         }
 
-        assert_eq!(part_2(&input, current_index, 10, iterations), initial_index)
+        assert_eq!(part_2(&input, current_index, 11, iterations), initial_index)
     }
 
     #[test]
-    fn input_test() {
+    fn input_test_part_2() {
         let input = parse_input(INPUT);
-
-        assert_eq!(part_2(&input, 5755, 10007, 1), 2019);
 
         let number_of_cards = 10007;
 
         let initial_index = 2020;
         let mut current_index = initial_index;
-        let iterations = 2;
+        let iterations = 1251227;
         for _ in 0..iterations {
             current_index = part_1(&input, current_index, number_of_cards);
         }
@@ -238,7 +240,19 @@ mod tests {
         assert_eq!(
             part_2(&input, current_index, number_of_cards, iterations),
             initial_index
-        )
+        );
+        let number_of_cards = 119315717514047;
+        current_index = initial_index;
+
+        for _ in 0..iterations {
+            current_index = part_1(&input, current_index, number_of_cards);
+        }
+
+        println!("Current index: {current_index}");
+        assert_eq!(
+            part_2(&input, current_index, number_of_cards, iterations),
+            initial_index
+        );
     }
 
     #[test]
