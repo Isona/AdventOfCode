@@ -128,9 +128,11 @@ mod tests {
     #[test]
     fn part_1_test() {
         let input = parse_input(TESTINPUT);
+        println!("{:?}", get_coeff_and_constant(&input, 10));
         assert_eq!(part_1(&input, 7, 10), 6);
         assert_eq!(part_1(&input, 5, 10), 2);
         assert_eq!(part_1(&input, 3, 10), 8);
+        panic!()
     }
 
     #[test]

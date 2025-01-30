@@ -1,4 +1,4 @@
-use crate::coordinate::Coordinate;
+use crate::{coordinate::Coordinate, Direction};
 use core::fmt;
 use std::ops::{Add, Mul, Sub};
 
@@ -17,6 +17,28 @@ impl Vector {
         Vector {
             x: b.x as i128 - a.x as i128,
             y: b.y as i128 - a.y as i128,
+        }
+    }
+
+    pub fn go_in_direction(&self, direction: Direction, magnitude: i128) -> Self {
+        match direction {
+            Direction::North => Self {
+                x: self.x,
+                y: self.y - magnitude,
+            },
+            Direction::South => Self {
+                x: self.x,
+                y: self.y + magnitude,
+            },
+            Direction::East => Self {
+                x: self.x + magnitude,
+                y: self.y,
+            },
+            Direction::West => Self {
+                x: self.x - magnitude,
+                y: self.y,
+            },
+            _ => panic!(),
         }
     }
 }
