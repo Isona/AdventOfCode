@@ -208,8 +208,40 @@ dependencies = [
 ]
 
 [[package]]
+name = "day21"
+version = "0.1.0"
+dependencies = [
+ "intcode",
+]
+
+[[package]]
 name = "day22"
 version = "0.1.0"
+
+[[package]]
+name = "day23"
+version = "0.1.0"
+dependencies = [
+ "intcode",
+]
+
+[[package]]
+name = "day24"
+version = "0.1.0"
+dependencies = [
+ "aoc_lib",
+ "itertools 0.14.0",
+ "rustc-hash",
+]
+
+[[package]]
+name = "day25"
+version = "0.1.0"
+dependencies = [
+ "intcode",
+ "itertools 0.14.0",
+ "regex",
+]
 
 [[package]]
 name = "either"

@@ -20,26 +20,35 @@ fn part_1(input: &[Shuffle], goal_card: i128, number_of_cards: i128) -> i128 {
     (goal_card * coefficient + constant).rem_euclid(number_of_cards)
 }
 
-// 20066843390330 is too low
 fn part_2(
     input: &[Shuffle],
     goal_index: i128,
     number_of_cards: i128,
     number_of_shuffles: i128,
 ) -> i128 {
-    let (coefficient, constant) = get_coeff_and_constant(input, number_of_cards);
-    println!("Coefficient: {coefficient}, Constant: {constant}");
+    // We can model the transformation after each shuffle as ax+b (a=coefficient, b=constant)
+    // After n shuffles it becomes: (a^n)x + b(1-a^n)/(1-a) mod number_of_cards
+    // To do the division we instead multiply by the modular inverse of (1-a, number_of_cards)
 
-    let coefficient = (coefficient * number_of_shuffles).rem_euclid(number_of_cards);
-    let constant = (constant * number_of_shuffles).rem_euclid(number_of_cards);
-    println!("Coefficient: {coefficient}, Constant: {constant}");
+    let (coefficient, constant) = get_inverse_coeff_and_constant(input, number_of_cards);
+    let coeff_after_iterations = mod_pow(coefficient, number_of_shuffles, number_of_cards);
 
-    // coefficient * x ≡ goal_index % number_of_cards
-    let (coeff_bezout, card_bezout) = extended_euclid(coefficient, number_of_cards);
+    let constant = constant.rem_euclid(number_of_cards);
 
-    let goal = (goal_index - coefficient).rem_euclid(number_of_cards);
+    let constant_after_iterations = {
+        if coefficient == 1 {
+            constant * number_of_shuffles
+        } else {
+            ((constant * (1 - coeff_after_iterations)).rem_euclid(number_of_cards)
+                * inverse(
+                    (1 - coefficient).rem_euclid(number_of_cards),
+                    number_of_cards,
+                ))
+            .rem_euclid(number_of_cards)
+        }
+    };
 
-    (goal * card_bezout).rem_euclid(number_of_cards)
+    ((goal_index * coeff_after_iterations) + constant_after_iterations).rem_euclid(number_of_cards)
 }
 
 fn get_coeff_and_constant(input: &[Shuffle], number_of_cards: i128) -> (i128, i128) {
@@ -64,30 +73,72 @@ fn get_coeff_and_constant(input: &[Shuffle], number_of_cards: i128) -> (i128, i1
     (coefficient, constant)
 }
 
-fn extended_euclid(a: i128, b: i128) -> (i128, i128) {
-    let mut old_r = a;
-    let mut r = b;
-    let mut old_s = 1;
-    let mut s = 0;
-    let mut old_t = 0;
-    let mut t = 1;
+fn get_inverse_coeff_and_constant(input: &[Shuffle], number_of_cards: i128) -> (i128, i128) {
+    let mut coefficient = 1;
+    let mut constant = 0;
 
-    while r != 0 {
-        let quotient = old_r / r;
-        let temp_r = old_r - quotient * r;
-        old_r = r;
-        r = temp_r;
-
-        let temp_s = old_s - quotient * s;
-        old_s = s;
-        s = temp_s;
-
-        let temp_t = old_t - quotient * t;
-        old_t = t;
-        t = temp_t;
+    for shuffle in input.iter().rev() {
+        match shuffle {
+            Shuffle::DealNew => {
+                coefficient = -coefficient;
+                constant = -constant - 1;
+            }
+            Shuffle::Cut(cut_size) => constant += cut_size,
+            Shuffle::Deal(deal_size) => {
+                let inverse = inverse(*deal_size, number_of_cards);
+                coefficient = (coefficient * inverse).rem_euclid(number_of_cards);
+                constant = (constant * inverse).rem_euclid(number_of_cards);
+            }
+        }
     }
 
-    (old_s, old_t)
+    (
+        coefficient.rem_euclid(number_of_cards),
+        constant.rem_euclid(number_of_cards),
+    )
+}
+
+fn inverse(a: i128, n: i128) -> i128 {
+    let mut t = 0;
+    let mut newt = 1;
+    let mut r: i128 = n;
+    let mut newr = a;
+
+    while newr != 0 {
+        let quotient = r / newr;
+        let temp_t = t - quotient * newt;
+        t = newt;
+        newt = temp_t;
+
+        let temp_r = r - quotient * newr;
+        r = newr;
+        newr = temp_r;
+    }
+
+    if r > 1 {
+        panic!()
+    }
+    if t < 0 {
+        t += n;
+    }
+
+    t
+}
+
+fn mod_pow(mut b: i128, mut e: i128, m: i128) -> i128 {
+    if m == 1 {
+        return 0;
+    }
+    let mut r = 1;
+    b = b.rem_euclid(m);
+    while e > 0 {
+        if e.rem_euclid(2) == 1 {
+            r = (r * b).rem_euclid(m)
+        }
+        b = (b * b).rem_euclid(m);
+        e /= 2;
+    }
+    r
 }
 
 fn parse_input(input: &str) -> Vec<Shuffle> {
@@ -136,36 +187,79 @@ mod tests {
     }
 
     #[test]
-    fn part_2_test() {
-        let input = parse_input(TESTINPUT);
-        assert_eq!(part_2(&input, 7, 10, 1), 0);
-        assert_eq!(part_2(&input, 3, 10, 1), 8);
-
-        let initial_index = 0;
-        let iterations = 1000;
-        let mut current_index = 9;
-        for _ in 0..iterations {
-            current_index = part_1(&input, current_index, 10);
-        }
-
-        assert_eq!(part_2(&input, current_index, 10, iterations), initial_index)
+    fn deal_new_inverse_test() {
+        let input = parse_input("deal into new stack");
+        assert_eq!(part_2(&input, 1, 11, 1), 9);
+        assert_eq!(part_2(&input, 1, 11, 2), 1);
     }
 
     #[test]
-    fn input_test() {
-        let input = parse_input(INPUT);
-        let number_of_cards = 119315717514047;
+    fn cut_inverse_test() {
+        let input = parse_input("cut 3");
+        assert_eq!(part_2(&input, 2, 11, 1), 5);
+        assert_eq!(part_2(&input, 2, 11, 2), 8);
+        assert_eq!(part_2(&input, 9, 11, 2), 4);
+    }
 
-        let initial_index = 0;
+    #[test]
+    fn deal_inverse_test() {
+        let input = parse_input("deal with increment 3");
+        assert_eq!(part_2(&input, 1, 11, 1), 4);
+        assert_eq!(part_2(&input, 3, 11, 1), 1);
+
+        assert_eq!(part_2(&input, 1, 11, 2), 5);
+        assert_eq!(part_2(&input, 3, 11, 2), 4);
+    }
+
+    #[test]
+    fn part_2_test() {
+        let input = parse_input(TESTINPUT);
+
+        let initial_index = 9;
+        let iterations = 1251227;
         let mut current_index = initial_index;
-        let iterations = 1000;
+        for _ in 0..iterations {
+            current_index = part_1(&input, current_index, 11);
+        }
+
+        assert_eq!(part_2(&input, current_index, 11, iterations), initial_index)
+    }
+
+    #[test]
+    fn input_test_part_2() {
+        let input = parse_input(INPUT);
+
+        let number_of_cards = 10007;
+
+        let initial_index = 2020;
+        let mut current_index = initial_index;
+        let iterations = 1251227;
         for _ in 0..iterations {
             current_index = part_1(&input, current_index, number_of_cards);
         }
 
+        println!("Current index: {current_index}");
         assert_eq!(
             part_2(&input, current_index, number_of_cards, iterations),
             initial_index
-        )
+        );
+        let number_of_cards = 119315717514047;
+        current_index = initial_index;
+
+        for _ in 0..iterations {
+            current_index = part_1(&input, current_index, number_of_cards);
+        }
+
+        println!("Current index: {current_index}");
+        assert_eq!(
+            part_2(&input, current_index, number_of_cards, iterations),
+            initial_index
+        );
+    }
+
+    #[test]
+    fn mod_pow_test() {
+        assert_eq!(mod_pow(15, 18, 23), 12);
+        assert_eq!(mod_pow(2616, 19861, 252), 180);
     }
 }
