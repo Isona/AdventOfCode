@@ -110,7 +110,7 @@ mod tests {
 
     #[test]
     fn part_2_test() {
-        let input = parse_input(&"R8, R4, R4, R8");
+        let input = parse_input("R8, R4, R4, R8");
         assert_eq!(part_2(&input), 4);
     }
 }
