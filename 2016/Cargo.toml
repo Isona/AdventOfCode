@@ -5,5 +5,5 @@ resolver = "2"
 [profile.release]
 debug = true
 
-[workspace.lints.rust]
+[workspace.lints.clippy]
 pedantic = "warn"
