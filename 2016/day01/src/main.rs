@@ -79,7 +79,7 @@ fn part_2(input: &[Travel]) -> i128 {
 fn parse_input(input: &str) -> Vec<Travel> {
     let mut travelled = Vec::new();
     for direction in input.split(", ") {
-        if direction.starts_with("R") {
+        if direction.starts_with('R') {
             let value = direction.strip_prefix("R").unwrap().parse().unwrap();
             travelled.push(Travel::Right(value));
         } else {

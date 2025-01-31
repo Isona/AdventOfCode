@@ -57,7 +57,7 @@ fn part_2(input: &str) -> String {
                 }
             }
         }
-        current_total.push(grid.get(current_coordinate).unwrap())
+        current_total.push(grid.get(current_coordinate).unwrap());
     }
 
     current_total
