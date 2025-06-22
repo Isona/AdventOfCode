@@ -1,6 +1,6 @@
 #![feature(let_chains)]
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use aoc_lib::Direction;
 use aoc_lib::{Coordinate, Grid};
@@ -8,16 +8,16 @@ use aoc_lib::{Coordinate, Grid};
 const INPUT: &str = include_str!("input.txt");
 
 fn main() {
-    let input = parse_input(INPUT);
+    let mut input = parse_input(INPUT);
 
-    let part_1_answer = part_1(&input);
+    let (part_1_answer, loop_coords) = part_1(&mut input);
     println!("Part 1: {part_1_answer}");
 
-    let part_2_answer = part_2(&input);
+    let part_2_answer = part_2(&mut input, loop_coords);
     println!("Part 2: {part_2_answer}");
 }
 
-fn part_1(input: &Grid<Pipe>) -> usize {
+fn part_1(input: &Grid<Pipe>) -> (usize, HashSet<Coordinate>) {
     let coords_to_search = get_start_connections(input);
 
     let start_coord = input.find_item(&Pipe::Start).unwrap();
@@ -42,12 +42,52 @@ fn part_1(input: &Grid<Pipe>) -> usize {
         }
     }
 
-    *searched_coords.values().max().unwrap()
+    (
+        *searched_coords.values().max().unwrap(),
+        searched_coords.keys().map(|x| x.clone()).collect(),
+    )
 }
 
-#[expect(unused_variables)]
-fn part_2(input: &Grid<Pipe>) -> u64 {
-    todo!();
+fn part_2(input: &mut Grid<Pipe>, loop_coords: HashSet<Coordinate>) -> u64 {
+    set_start(input);
+
+    let mut inside_count = 0;
+    for (coord, _item) in input.indexed_iter().filter(|x| !loop_coords.contains(&x.0)) {
+        let mut vertical_count = 0;
+        let mut last_corner = Pipe::Empty;
+        for east_pipe in input
+            .view_from(&coord, Direction::East)
+            .iter()
+            .filter(|x| loop_coords.contains(&x.location))
+        {
+            let east_pipe_type = input.get(east_pipe.location);
+            match east_pipe_type {
+                Pipe::Vertical => vertical_count += 1,
+                Pipe::NE | Pipe::SE => last_corner = *east_pipe_type,
+                Pipe::NW => {
+                    if last_corner == Pipe::SE {
+                        vertical_count += 1
+                    };
+                    last_corner = Pipe::Empty
+                }
+                Pipe::SW => {
+                    if last_corner == Pipe::NE {
+                        vertical_count += 1
+                    };
+                    last_corner = Pipe::Empty
+                }
+                Pipe::Start => {
+                    panic!()
+                }
+                Pipe::Empty | Pipe::Horizontal => {}
+            }
+        }
+
+        if vertical_count % 2 != 0 {
+            inside_count += 1
+        }
+    }
+    inside_count
 }
 
 fn get_start_connections(input: &Grid<Pipe>) -> Vec<(Coordinate, Direction)> {
@@ -66,6 +106,48 @@ fn get_start_connections(input: &Grid<Pipe>) -> Vec<(Coordinate, Direction)> {
     }
 
     valid_neighbours
+}
+
+fn set_start(input: &mut Grid<Pipe>) {
+    let start_loc = input.find_item(&Pipe::Start).unwrap();
+    let start_neighbours = get_start_connections(input);
+    assert_eq!(start_neighbours.len(), 2);
+
+    let start_type = match start_neighbours[0].1 {
+        Direction::North => match start_neighbours[1].1 {
+            Direction::South => Pipe::Vertical,
+            Direction::East => Pipe::NE,
+            Direction::West => Pipe::NW,
+            _ => {
+                panic!()
+            }
+        },
+        Direction::South => match start_neighbours[1].1 {
+            Direction::North => Pipe::Vertical,
+            Direction::East => Pipe::SE,
+            Direction::West => Pipe::SW,
+            _ => {
+                panic!()
+            }
+        },
+        Direction::East => match start_neighbours[1].1 {
+            Direction::North => Pipe::NE,
+            Direction::South => Pipe::SE,
+            Direction::West => Pipe::Horizontal,
+            _ => panic!(),
+        },
+        Direction::West => match start_neighbours[1].1 {
+            Direction::North => Pipe::NW,
+            Direction::South => Pipe::SW,
+            Direction::East => Pipe::Horizontal,
+            _ => panic!(),
+        },
+        _ => {
+            panic!()
+        }
+    };
+
+    input.set(start_loc, start_type);
 }
 
 fn parse_input(input: &str) -> Grid<Pipe> {
@@ -147,22 +229,32 @@ mod tests {
     use super::*;
     const TESTINPUT: &str = include_str!("testinput.txt");
     const TESTINPUT2: &str = include_str!("testinput2.txt");
+    const TESTINPUT3: &str = include_str!("testinput3.txt");
+    const TESTINPUT4: &str = include_str!("testinput4.txt");
 
     #[test]
     fn part_1_test() {
         let input = parse_input(TESTINPUT);
-        assert_eq!(part_1(&input), 4);
+        assert_eq!(part_1(&input).0, 4);
     }
 
     #[test]
     fn part_1_test2() {
         let input = parse_input(TESTINPUT2);
-        assert_eq!(part_1(&input), 8);
+        assert_eq!(part_1(&input).0, 8);
     }
 
     #[test]
     fn part_2_test() {
-        let input = parse_input(TESTINPUT);
-        assert_eq!(part_2(&input), 5);
+        let mut input = parse_input(TESTINPUT3);
+        let (_, loop_coords) = part_1(&input);
+        assert_eq!(part_2(&mut input, loop_coords), 4);
+    }
+
+    #[test]
+    fn part_2_test2() {
+        let mut input = parse_input(TESTINPUT4);
+        let (_, loop_coords) = part_1(&input);
+        assert_eq!(part_2(&mut input, loop_coords), 10);
     }
 }
