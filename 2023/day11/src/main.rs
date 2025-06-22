@@ -19,7 +19,7 @@ fn main() {
     println!("Part 2: {part_2_answer} in {time_taken:.3} ms");
 }
 
-fn get_distances(input: &Grid<Space>, expansion_size: usize) -> usize {
+fn get_distances(input: &Grid<Space>, expansion_size: usize) -> i64 {
     let mut score = 0;
 
     let mut x_values = Vec::new();
@@ -36,8 +36,8 @@ fn get_distances(input: &Grid<Space>, expansion_size: usize) -> usize {
         }
     }
 
-    for (galaxy_1, galaxy_2) in x_values.iter().tuple_combinations() {
-        score += galaxy_1.abs_diff(*galaxy_2);
+    for (index, x_value) in x_values.iter().rev().enumerate() {
+        score += *x_value as i64 * (x_values.len() as i64 - 1 - index as i64 * 2);
     }
 
     let mut y_values = Vec::new();
@@ -54,8 +54,8 @@ fn get_distances(input: &Grid<Space>, expansion_size: usize) -> usize {
         }
     }
 
-    for (galaxy_1, galaxy_2) in y_values.iter().tuple_combinations() {
-        score += galaxy_1.abs_diff(*galaxy_2);
+    for (index, y_value) in y_values.iter().rev().enumerate() {
+        score += *y_value as i64 * (y_values.len() as i64 - 1 - index as i64 * 2);
     }
 
     score
