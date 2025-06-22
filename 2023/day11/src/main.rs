@@ -61,10 +61,6 @@ fn get_distances(input: &Grid<Space>, expansion_size: usize) -> usize {
     score
 }
 
-fn part_2(input: &Grid<Space>) -> u64 {
-    todo!();
-}
-
 fn parse_input(input: &str) -> Grid<Space> {
     let mut grid = Grid::new();
     for line in input.lines() {

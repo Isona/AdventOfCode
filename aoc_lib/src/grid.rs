@@ -43,14 +43,17 @@ impl<T> Grid<T> {
         self.data[coord.y * self.row_len + coord.x] = value;
     }
 
-    pub fn get_all_neighbours(&self, location: Coordinate) -> impl Iterator<Item = Neighbour<T>> {
+    pub fn get_all_neighbours(
+        &self,
+        location: Coordinate,
+    ) -> impl Iterator<Item = Neighbour<'_, T>> {
         self.get_neighbours(location, Direction::get_all())
     }
 
     pub fn get_cardinal_neighbours(
         &self,
         location: Coordinate,
-    ) -> impl Iterator<Item = Neighbour<T>> {
+    ) -> impl Iterator<Item = Neighbour<'_, T>> {
         self.get_neighbours(location, Direction::get_cardinals())
     }
 
@@ -68,7 +71,7 @@ impl<T> Grid<T> {
         &self,
         location: Coordinate,
         direction: Direction,
-    ) -> Option<Neighbour<T>> {
+    ) -> Option<Neighbour<'_, T>> {
         let new_x = match direction {
             Direction::East | Direction::NorthEast | Direction::SouthEast => {
                 if location.x + 1 < self.row_len {
@@ -195,7 +198,11 @@ impl<T> Grid<T> {
             .map(|x| self.index_to_coord(x))
     }
 
-    pub fn view_from(&self, coord: &Coordinate, direction: Direction) -> Vec<Neighbour<T>> {
+    pub fn view_from<'a>(
+        &'a self,
+        coord: &Coordinate,
+        direction: Direction,
+    ) -> Vec<Neighbour<'a, T>> {
         let mut current_coord = *coord;
         let mut view = Vec::new();
 
