@@ -17,6 +17,14 @@ impl<T> Grid<T> {
         Self::default()
     }
 
+    pub fn get_width(&self) -> usize {
+        self.row_len
+    }
+
+    pub fn get_height(&self) -> usize {
+        self.row_count
+    }
+
     pub fn push_row(&mut self, new_row: Vec<T>) {
         if self.data.is_empty() {
             self.row_len = new_row.len();
