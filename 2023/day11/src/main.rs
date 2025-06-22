@@ -1,5 +1,4 @@
 use aoc_lib::Grid;
-use itertools::Itertools;
 
 const INPUT: &str = include_str!("input.txt");
 
