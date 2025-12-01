@@ -1,4 +1,5 @@
 use core::fmt;
+use std::fmt::Write;
 
 use crate::{coordinate::Coordinate, direction::Direction, Visited};
 
@@ -235,6 +236,24 @@ where
             }
 
             output.push_str(&self.data[i].to_string());
+        }
+
+        write!(f, "{}", output)
+    }
+}
+
+impl<T> fmt::Debug for Grid<T>
+where
+    T: fmt::Debug,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut output = "".to_string();
+        for i in 0..self.data.len() {
+            if i != 0 && i % self.row_len == 0 {
+                output.push('\n');
+            }
+            _ = write!(output, "{:?}", &self.data[i]);
+            //output.push_str(&self.data[i]);
         }
 
         write!(f, "{}", output)

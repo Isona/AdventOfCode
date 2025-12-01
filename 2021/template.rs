@@ -3,25 +3,35 @@ const INPUT: &str = include_str!("input.txt");
 fn main() {
     let input = parse_input(INPUT);
 
+    let start = std::time::Instant::now();
     let part_1_answer = part_1(&input);
-    println!("{part_1_answer}");
 
+    let time_taken = start.elapsed().as_secs_f32() * 1000.0;
+    println!("Part 1: {part_1_answer} in {time_taken:.3} ms");
+
+    let start = std::time::Instant::now();
     let part_2_answer = part_2(&input);
-    println!("{part_2_answer}");
+
+    let time_taken = start.elapsed().as_secs_f32() * 1000.0;
+    println!("Part 2: {part_2_answer} in {time_taken:.3} ms");
 }
 
-fn part_1(input: &[i32]) -> i32 {}
+fn part_1(input: &[u64]) -> u64 {
+    todo!();
+}
 
-fn part_2(input: &[i32]) -> i32 {}
+fn part_2(input: &[u64]) -> u64 {
+    todo!();
+}
 
-fn parse_input(input: &str) -> Vec<i32> {
-    input.lines().map(|x| x.parse::<i32>().unwrap()).collect()
+fn parse_input(input: &str) -> Vec<u64> {
+    input.lines().map(|x| x.parse::<u64>().unwrap()).collect()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    const TESTINPUT: &str = "";
+    const TESTINPUT: &str = include_str!("testinput.txt");
 
     #[test]
     fn part_1_test() {
