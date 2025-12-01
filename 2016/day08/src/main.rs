@@ -53,13 +53,13 @@ enum Instruction {
 impl Instruction {
     fn new(input: &str) -> Self {
         if input.starts_with("rotate row") {
-            let first_split = input.split('=').last().unwrap();
+            let first_split = input.split('=').next_back().unwrap();
             let mut next_split = first_split.split_whitespace();
             let row_index = next_split.next().unwrap().parse().unwrap();
             let shift_size = next_split.last().unwrap().parse().unwrap();
             Instruction::RotateRow(row_index, shift_size)
         } else if input.starts_with("rotate column") {
-            let first_split = input.split('=').last().unwrap();
+            let first_split = input.split('=').next_back().unwrap();
             let mut next_split = first_split.split_whitespace();
             let column_index = next_split.next().unwrap().parse().unwrap();
             let shift_size = next_split.last().unwrap().parse().unwrap();

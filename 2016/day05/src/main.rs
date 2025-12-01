@@ -25,7 +25,8 @@ fn part_1(input: &str) -> (String, String) {
         let result = hasher.finalize();
         if result[0..2] == [0, 0] && result[2] < 0x10 {
             if output_1.len() < 8 {
-                output_1.push_str(&format!("{:x}", result[2]));
+                let _ = write!(output_1, "{:x}", result[2]);
+                //output_1.push_str(&format!("{:x}", result[2]));
             }
             if result[2] < 8 {
                 output_2.entry(result[2]).or_insert_with(|| result[3] >> 4);

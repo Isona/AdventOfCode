@@ -51,10 +51,10 @@ fn part_2(input: &str) -> String {
     for line in input.lines() {
         for value in line.chars() {
             let direction = get_direction(value);
-            if let Some(neighbour) = grid.get_neighbour(current_coordinate, direction) {
-                if neighbour.value.is_some() {
-                    current_coordinate = neighbour.location;
-                }
+            if let Some(neighbour) = grid.get_neighbour(current_coordinate, direction)
+                && neighbour.value.is_some()
+            {
+                current_coordinate = neighbour.location;
             }
         }
         current_total.push(grid.get(current_coordinate).unwrap());
