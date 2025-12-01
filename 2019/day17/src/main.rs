@@ -24,7 +24,7 @@ fn main() {
 
 fn part_1(pc: &mut IntCodePC) -> (Grid<char>, usize) {
     let (_, output) = pc.run_with_input([].into());
-    let output: Vec<u8> = output.iter().map(|x| (*x as u8)).collect();
+    let output: Vec<u8> = output.iter().map(|x| *x as u8).collect();
     let input = std::str::from_utf8(&output).unwrap();
 
     let mut grid = Grid::new();
@@ -108,17 +108,17 @@ fn get_next_movement(
     }
 
     // Try turning right
-    if let Some(neighbour) = grid.get_neighbour(current_coord, current_direction.turn_right()) {
-        if neighbour.value == &'#' {
-            return Some(Movement::Right);
-        }
+    if let Some(neighbour) = grid.get_neighbour(current_coord, current_direction.turn_right())
+        && neighbour.value == &'#'
+    {
+        return Some(Movement::Right);
     }
 
     // Try turning left
-    if let Some(neighbour) = grid.get_neighbour(current_coord, current_direction.turn_left()) {
-        if neighbour.value == &'#' {
-            return Some(Movement::Left);
-        }
+    if let Some(neighbour) = grid.get_neighbour(current_coord, current_direction.turn_left())
+        && neighbour.value == &'#'
+    {
+        return Some(Movement::Left);
     }
 
     None

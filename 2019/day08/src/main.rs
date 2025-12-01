@@ -1,4 +1,4 @@
-#![feature(iter_array_chunks, array_chunks)]
+#![feature(iter_array_chunks)]
 
 use aoc_lib::{Coordinate, Grid};
 
@@ -68,8 +68,8 @@ fn parse_input(input: &str) -> Vec<Grid<u32>> {
     let mut image = Vec::new();
     for layer_chars in input.chars().array_chunks::<150>() {
         let mut layer = Grid::new();
-        for row_chars in layer_chars.array_chunks::<25>() {
-            let row = Vec::from(row_chars.map(|x| x.to_digit(10).unwrap()));
+        for row_chars in layer_chars.chunks(25) {
+            let row = row_chars.iter().map(|x| x.to_digit(10).unwrap()).collect();
             layer.push_row(row);
         }
         image.push(layer);

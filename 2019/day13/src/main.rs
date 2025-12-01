@@ -1,4 +1,3 @@
-#![feature(iter_array_chunks, array_chunks)]
 use std::fmt::Display;
 
 use aoc_lib::{Coordinate, Grid};
@@ -25,7 +24,7 @@ fn main() {
 
 fn part_1(pc: &mut IntCodePC) -> usize {
     pc.run_program();
-    let output = pc.take_output();
+    let mut output = pc.take_output();
 
     assert_eq!(output.len() % 3, 0);
 
@@ -34,7 +33,7 @@ fn part_1(pc: &mut IntCodePC) -> usize {
         grid.push_row([TileType::Empty; 50].to_vec());
     }
 
-    for output_triple in output.into_iter().array_chunks::<3>() {
+    for output_triple in output.make_contiguous().chunks(3) {
         let coordinate = Coordinate::new(
             output_triple[0].try_into().unwrap(),
             output_triple[1].try_into().unwrap(),
@@ -67,7 +66,7 @@ fn part_2(pc: &mut IntCodePC) -> i128 {
     }
     pc.set_input([0; 20000].into());
     pc.run_program();
-    let output = pc.take_output();
+    let mut output = pc.take_output();
 
     assert_eq!(output.len() % 3, 0);
 
@@ -77,7 +76,7 @@ fn part_2(pc: &mut IntCodePC) -> i128 {
     }
 
     let mut score = 0;
-    for output_triple in output.into_iter().array_chunks::<3>() {
+    for output_triple in output.make_contiguous().chunks(3) {
         if output_triple[0] == -1 && output_triple[1] == 0 {
             score = output_triple[2];
             continue;
