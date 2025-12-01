@@ -24,14 +24,13 @@ fn part_1(input: &str) -> i32 {
 }
 
 fn part_2(input: &str) -> i64 {
-    let mut current_y = 0;
     let mut trees_hit_r1d1 = 0;
     let mut trees_hit_r3d1 = 0;
     let mut trees_hit_r5d1 = 0;
     let mut trees_hit_r7d1 = 0;
     let mut trees_hit_r1d2 = 0;
 
-    for line in input.lines() {
+    for (current_y, line) in input.lines().enumerate() {
         let line_chars: Vec<char> = line.chars().collect();
         let line_len = line_chars.len();
 
@@ -54,14 +53,9 @@ fn part_2(input: &str) -> i64 {
         if current_y % 2 == 0 && line_chars[(current_y / 2) % line_len] == '#' {
             trees_hit_r1d2 += 1;
         }
-        current_y += 1;
     }
 
     trees_hit_r1d1 * trees_hit_r3d1 * trees_hit_r5d1 * trees_hit_r7d1 * trees_hit_r1d2
-}
-
-fn parse_input(input: &str) -> Vec<i32> {
-    input.lines().map(|x| x.parse::<i32>().unwrap()).collect()
 }
 
 #[cfg(test)]
@@ -71,11 +65,11 @@ mod tests {
 
     #[test]
     fn part_1_test() {
-        assert_eq!(part_1(&TESTINPUT), 7);
+        assert_eq!(part_1(TESTINPUT), 7);
     }
 
     #[test]
     fn part_2_test() {
-        assert_eq!(part_2(&TESTINPUT), 336);
+        assert_eq!(part_2(TESTINPUT), 336);
     }
 }

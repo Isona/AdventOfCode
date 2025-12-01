@@ -77,7 +77,7 @@ impl PasswordPolicy {
 fn parse_input(input: &str) -> Vec<PasswordPolicy> {
     input
         .lines()
-        .map(|x| PasswordPolicy::get_password_policy(x))
+        .map(PasswordPolicy::get_password_policy)
         .collect()
 }
 
