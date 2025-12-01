@@ -1,5 +1,3 @@
-#![feature(let_chains)]
-
 use std::collections::{HashMap, HashSet};
 
 use aoc_lib::Direction;
@@ -10,7 +8,7 @@ const INPUT: &str = include_str!("input.txt");
 fn main() {
     let mut input = parse_input(INPUT);
 
-    let (part_1_answer, loop_coords) = part_1(&mut input);
+    let (part_1_answer, loop_coords) = part_1(&input);
     println!("Part 1: {part_1_answer}");
 
     let part_2_answer = part_2(&mut input, loop_coords);
@@ -44,7 +42,7 @@ fn part_1(input: &Grid<Pipe>) -> (usize, HashSet<Coordinate>) {
 
     (
         *searched_coords.values().max().unwrap(),
-        searched_coords.keys().map(|x| x.clone()).collect(),
+        searched_coords.keys().copied().collect(),
     )
 }
 

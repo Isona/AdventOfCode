@@ -1,5 +1,3 @@
-use std::i32::MAX;
-
 use ndarray::Array2;
 
 const INPUT: &str = include_str!("input.txt");
@@ -15,14 +13,14 @@ fn main() {
 }
 
 fn part_1(calls: &[i32], boards: &mut Vec<BingoBoard>) -> i32 {
-    let mut fastest_win = MAX;
+    let mut fastest_win = i32::MAX;
     let mut score = 0;
     for board in boards {
-        if let Some(winning_turn) = board.get_winning_turn(&calls) {
+        if let Some(winning_turn) = board.get_winning_turn(calls) {
             dbg!(&winning_turn);
             if winning_turn < fastest_win {
                 fastest_win = winning_turn;
-                score = board.get_score(&calls, winning_turn);
+                score = board.get_score(calls, winning_turn);
             }
         }
     }
@@ -30,8 +28,8 @@ fn part_1(calls: &[i32], boards: &mut Vec<BingoBoard>) -> i32 {
     score
 }
 
-fn part_2(calls: &[i32], boards: &Vec<BingoBoard>) -> i32 {
-    0
+fn part_2(calls: &[i32], boards: &[BingoBoard]) -> i32 {
+    todo!();
 }
 
 fn parse_input(input: &str) -> (Vec<i32>, Vec<BingoBoard>) {
@@ -62,7 +60,7 @@ fn parse_input(input: &str) -> (Vec<i32>, Vec<BingoBoard>) {
         boards.push(BingoBoard { board });
     }
     //input.lines().map(|x| x.parse::<i32>().unwrap()).collect()
-    return (calls, Vec::new());
+    (calls, Vec::new())
 }
 
 #[derive(Debug)]
@@ -72,9 +70,9 @@ struct BingoBoard {
 
 impl BingoBoard {
     fn get_winning_turn(&mut self, calls: &[i32]) -> Option<i32> {
-        for i in 0..calls.len() {
+        for (i, call) in calls.iter().enumerate() {
             for item in self.board.iter_mut() {
-                if calls[i] == item.0 {
+                if *call == item.0 {
                     item.1 = true;
                     break;
                 }
@@ -89,18 +87,18 @@ impl BingoBoard {
 
     fn has_won(&self) -> bool {
         for row in self.board.rows() {
-            if !row.iter().any(|x| x.1 == false) {
+            if !row.iter().any(|x| !x.1) {
                 return true;
             }
         }
 
         for column in self.board.columns() {
-            if !column.iter().any(|x| x.1 == false) {
+            if !column.iter().any(|x| !x.1) {
                 return true;
             }
         }
 
-        return false;
+        false
     }
 
     fn get_score(&self, calls: &[i32], winning_turn: i32) -> i32 {

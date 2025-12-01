@@ -59,7 +59,7 @@ fn do_iteration(input: &HashMap<u64, u64>) -> HashMap<u64, u64> {
         }
         // If the stone's length is divisible by 2
         else if stone_type.ilog10() % 2 == 1 {
-            let log: u32 = (stone_type.ilog10() + 1) / 2;
+            let log: u32 = stone_type.ilog10().div_ceil(2);
             let first_half = stone_type % 10u64.pow(log);
             let second_half = stone_type / 10u64.pow(log);
 

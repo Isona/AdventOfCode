@@ -10,7 +10,7 @@ fn main() {
     println!("{part_2_answer}");
 }
 
-fn part_1(input: &mut Vec<Vec<Position>>) -> usize {
+fn part_1(input: &mut [Vec<Position>]) -> usize {
     // Horizontal, left to right
 
     for row in input.iter_mut() {

@@ -22,7 +22,7 @@ fn main() {
     println!("Part 2: {part_2_answer} in {time_taken:.3} ms");
 }
 
-fn part_1(start_wires: &HashMap<String, u8>, calculations: &Vec<Calculation>) -> u64 {
+fn part_1(start_wires: &HashMap<String, u8>, calculations: &[Calculation]) -> u64 {
     let mut current_wires = start_wires.clone();
     let mut remaining_calculations: VecDeque<&Calculation> = calculations.iter().collect();
     while let Some(calc) = remaining_calculations.pop_front() {
@@ -49,7 +49,7 @@ fn part_1(start_wires: &HashMap<String, u8>, calculations: &Vec<Calculation>) ->
     z_wires
 }
 
-fn part_2(start_wires: &HashMap<String, u8>, calculations: &Vec<Calculation>) -> u64 {
+fn part_2(start_wires: &HashMap<String, u8>, calculations: &[Calculation]) -> u64 {
     let x_y = calculations
         .iter()
         .filter(|x| x.op1.starts_with("x") || x.op2.starts_with("x"));
@@ -93,10 +93,9 @@ fn part_2(start_wires: &HashMap<String, u8>, calculations: &Vec<Calculation>) ->
         if calculations
             .iter()
             .any(|x| x.has_input(&and_output) && x.operation != BooleanOp::Or)
+            && and_output != x_and_y[0]
         {
-            if and_output != x_and_y[0] {
-                and_output_errors.push(and_output);
-            }
+            and_output_errors.push(and_output);
         }
     }
     println!("{and_output_errors:?}");
@@ -186,7 +185,7 @@ fn parse_input(input: &str) -> (HashMap<String, u8>, Vec<Calculation>) {
 
     // frj XOR qhw -> z04
     let regex_pattern = r"(?<op1>.{3}) (?<operation>.{2,3}) (?<op2>.{3}) -> (?<output>.{3})";
-    let regex = Regex::new(&regex_pattern).unwrap();
+    let regex = Regex::new(regex_pattern).unwrap();
     for line in input.lines() {
         match state {
             ParseState::Wires => {
@@ -231,10 +230,10 @@ struct Calculation {
 
 impl Calculation {
     fn calc_result(&self, available_wires: &HashMap<String, u8>) -> Option<(String, u8)> {
-        if let Some(op1) = available_wires.get(&self.op1) {
-            if let Some(op2) = available_wires.get(&self.op2) {
-                return Some((self.out.clone(), self.operation.do_op(op1, op2)));
-            }
+        if let Some(op1) = available_wires.get(&self.op1)
+            && let Some(op2) = available_wires.get(&self.op2)
+        {
+            return Some((self.out.clone(), self.operation.do_op(op1, op2)));
         }
         None
     }

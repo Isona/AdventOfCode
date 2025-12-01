@@ -27,17 +27,13 @@ fn xmas_matches_from_coord(input: &Grid<char>, x_coord: Coordinate) -> u64 {
     let mut count = 0;
 
     for m_coord in input.get_all_neighbours(x_coord) {
-        if m_coord.value == &'M' {
-            if let Some(a_coord) = input.get_neighbour(m_coord.location, m_coord.direction) {
-                if a_coord.value == &'A' {
-                    if let Some(s_coord) = input.get_neighbour(a_coord.location, m_coord.direction)
-                    {
-                        if s_coord.value == &'S' {
-                            count += 1;
-                        }
-                    }
-                }
-            }
+        if m_coord.value == &'M'
+            && let Some(a_coord) = input.get_neighbour(m_coord.location, m_coord.direction)
+            && a_coord.value == &'A'
+            && let Some(s_coord) = input.get_neighbour(a_coord.location, m_coord.direction)
+            && s_coord.value == &'S'
+        {
+            count += 1;
         }
     }
 

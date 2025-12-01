@@ -44,7 +44,7 @@ fn parse_input(input: &str) -> (Vec<i64>, Vec<i64>) {
         let mut parts = line.split(' ');
 
         list1.push(parts.next().unwrap().parse::<i64>().unwrap());
-        list2.push(parts.last().unwrap().parse::<i64>().unwrap());
+        list2.push(parts.next_back().unwrap().parse::<i64>().unwrap());
     }
 
     (list1, list2)

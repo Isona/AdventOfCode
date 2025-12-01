@@ -97,12 +97,11 @@ impl Rule {
     }
 
     fn obeys_rule(&self, list: &[u64]) -> bool {
-        if let Some(first_index) = list.iter().position(|x| x == &self.lower) {
-            if let Some(second_index) = list.iter().position(|x| x == &self.upper) {
-                if second_index < first_index {
-                    return false;
-                }
-            }
+        if let Some(first_index) = list.iter().position(|x| x == &self.lower)
+            && let Some(second_index) = list.iter().position(|x| x == &self.upper)
+            && second_index < first_index
+        {
+            return false;
         }
         true
     }

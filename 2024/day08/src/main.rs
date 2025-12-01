@@ -26,16 +26,16 @@ fn part_1(input: &Grid<char>, unique_values: &HashSet<char>) -> usize {
         for pair in signal_locations.combinations(2) {
             assert!(pair.len() == 2);
             let difference = Vector::get_difference(&pair[0], &pair[1]);
-            if let Some(subtracted) = pair[0].sub_vec(&difference) {
-                if input.is_valid_coord(subtracted) {
-                    antinode_locations.insert(subtracted);
-                }
+            if let Some(subtracted) = pair[0].sub_vec(&difference)
+                && input.is_valid_coord(subtracted)
+            {
+                antinode_locations.insert(subtracted);
             }
 
-            if let Some(added) = pair[1].add_vec(&difference) {
-                if input.is_valid_coord(added) {
-                    antinode_locations.insert(added);
-                }
+            if let Some(added) = pair[1].add_vec(&difference)
+                && input.is_valid_coord(added)
+            {
+                antinode_locations.insert(added);
             }
         }
     }

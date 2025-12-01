@@ -1,5 +1,3 @@
-#![feature(let_chains)]
-
 use grid::*;
 use std::collections::{HashMap, HashSet};
 

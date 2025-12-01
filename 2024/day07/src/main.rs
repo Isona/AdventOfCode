@@ -120,7 +120,7 @@ impl CalibrationEquation {
                 .parse::<u64>()
                 .unwrap();
 
-            return self.calculate_part2(concatenated, index + 1);
+            self.calculate_part2(concatenated, index + 1)
         }
     }
 }

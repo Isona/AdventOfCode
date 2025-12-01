@@ -19,7 +19,7 @@ fn calculate_winnings(input: &Vec<(Hand, u64)>) -> u64 {
     let mut hand_rank = 1;
 
     let mut sorted = input.clone();
-    sorted.sort_by(|a, b| (a.0.cmp(&b.0)));
+    sorted.sort_by(|a, b| a.0.cmp(&b.0));
 
     for (_, bid) in sorted {
         part_1_total += bid * hand_rank;
