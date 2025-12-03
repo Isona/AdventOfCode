@@ -1,5 +1,3 @@
-use cached::proc_macro::cached;
-
 const INPUT: &str = include_str!("input.txt");
 
 fn main() {
@@ -35,18 +33,9 @@ fn parse_input(input: &str) -> Vec<IDRange> {
         let end = current_split.next().unwrap().parse().unwrap();
         id_ranges.push(IDRange { start, end });
     }
-    //input.lines().map(|x| x.parse::<u64>().unwrap()).collect()
+
     id_ranges
 }
-
-// fn is_valid(input: u64) -> bool {
-//     let input_log10 = input.ilog10();
-
-//     // If it's an odd number of characters it's definitely valid
-//     if input_log10 % 2 == 0 {
-//         return true;
-//     }
-// }
 
 #[derive(Debug, Clone, Copy)]
 struct IDRange {
@@ -61,10 +50,6 @@ impl IDRange {
 
         let start_invalid_index = get_invalid_index(self.start);
         let end_invalid_index = get_invalid_index(self.end);
-        //while current < self.end {}
-
-        println!("Start: {}, Start index: {start_invalid_index}", self.start);
-        println!("End: {}, End index: {end_invalid_index}", self.end);
 
         for invalid_index in start_invalid_index..=end_invalid_index {
             let invalid = get_invalid_by_index(invalid_index);
@@ -74,9 +59,20 @@ impl IDRange {
         }
         invalid_sum
     }
+
+    fn invalid_sum_part_2(&self) -> u64 {
+        let mut invalid_sum = 0;
+
+        // If the start and end ranges have the same digit count
+        if self.start.ilog10() == self.end.ilog10() {
+        }
+        // If they're different
+        else {
+        }
+        invalid_sum
+    }
 }
 
-#[cached]
 fn get_invalid_by_index(input: u64) -> u64 {
     input * 10_u64.pow(input.ilog10() + 1) + input
 }
@@ -88,6 +84,10 @@ fn get_invalid_index(input: u64) -> u64 {
     } else {
         input / 10_u64.pow(input_log10.div_ceil(2))
     }
+}
+
+fn get_factors(input: u64) -> impl Iterator<Item = u64> {
+    (1u64..=input / 2).filter(move |i| input.is_multiple_of(*i))
 }
 
 #[cfg(test)]
@@ -105,6 +105,17 @@ mod tests {
     #[test]
     fn part_2_test() {
         let input = parse_input(TESTINPUT);
-        assert_eq!(part_2(&input), 5);
+        assert_eq!(part_2(&input), 4174379265);
+    }
+
+    #[test]
+    fn test_factors() {
+        assert_eq!(get_factors(10).collect::<Vec<u64>>(), vec![1, 2, 5]);
+        assert_eq!(get_factors(7).collect::<Vec<u64>>(), vec![1]);
+        assert_eq!(get_factors(9).collect::<Vec<u64>>(), vec![1, 3]);
+        assert_eq!(
+            get_factors(24).collect::<Vec<u64>>(),
+            vec![1, 2, 3, 4, 6, 8, 12]
+        );
     }
 }
