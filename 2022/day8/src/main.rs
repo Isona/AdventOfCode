@@ -1,119 +1,114 @@
+use std::collections::HashSet;
+
+use aoc_lib::{Grid, CARDINALS};
+
 const INPUT: &str = include_str!("input.txt");
 
 fn main() {
     let mut input = parse_input(INPUT);
 
+    let start = std::time::Instant::now();
     let part_1_answer = part_1(&mut input);
-    println!("{part_1_answer}");
 
+    let time_taken = start.elapsed().as_secs_f32() * 1000.0;
+    println!("Part 1: {part_1_answer} in {time_taken:.3} ms");
+
+    let start = std::time::Instant::now();
     let part_2_answer = part_2(&input);
-    println!("{part_2_answer}");
+
+    let time_taken = start.elapsed().as_secs_f32() * 1000.0;
+    println!("Part 2: {part_2_answer} in {time_taken:.3} ms");
 }
 
-fn part_1(input: &mut [Vec<Position>]) -> usize {
+fn part_1(input: &mut Grid<i32>) -> usize {
     // Horizontal, left to right
+    let mut visible = HashSet::new();
 
-    for row in input.iter_mut() {
-        let mut visible_height = 0;
+    for row_index in 0..input.get_height() {
+        let row: Vec<aoc_lib::Coordinate> = input.get_row(row_index).collect();
+        let mut visible_height = -1;
 
-        for position in row.iter_mut() {
-            if position.tree_size >= visible_height {
-                position.visible = true;
-                visible_height = position.tree_size + 1;
+        for coord in row.iter().copied() {
+            let current_size = *input.get(coord);
+            if current_size > visible_height {
+                visible_height = current_size;
+                visible.insert(coord);
             }
+        }
 
-            if visible_height == 10 {
-                break;
+        visible_height = -1;
+        for coord in row.iter().rev().copied() {
+            let current_size = *input.get(coord);
+            if current_size > visible_height {
+                visible_height = current_size;
+                visible.insert(coord);
             }
         }
     }
 
-    for row in input.iter_mut() {
-        let mut visible_height = 0;
+    for column_index in 0..input.get_width() {
+        let column: Vec<aoc_lib::Coordinate> = input.get_column(column_index).collect();
+        let mut visible_height = -1;
 
-        for position in row.iter_mut().rev() {
-            if position.tree_size >= visible_height {
-                position.visible = true;
-                visible_height = position.tree_size + 1;
+        for coord in column.iter().copied() {
+            let current_size = *input.get(coord);
+            if current_size > visible_height {
+                visible_height = current_size;
+                visible.insert(coord);
             }
+        }
 
-            if visible_height == 10 {
-                break;
+        visible_height = -1;
+        for coord in column.iter().rev().copied() {
+            let current_size = *input.get(coord);
+            if current_size > visible_height {
+                visible_height = current_size;
+                visible.insert(coord);
             }
         }
     }
 
-    for column_index in 0..input[0].len() {
-        let mut visible_height = 0;
-        for row_index in 0..input.len() {
-            let position = input
-                .get_mut(row_index)
-                .unwrap()
-                .get_mut(column_index)
-                .unwrap();
-            if position.tree_size >= visible_height {
-                position.visible = true;
-                visible_height = position.tree_size + 1;
-            }
-
-            if visible_height == 10 {
-                break;
-            }
-        }
-    }
-
-    for column_index in 0..input[0].len() {
-        let mut visible_height = 0;
-        for row_index in (0..input.len()).rev() {
-            let position = input
-                .get_mut(row_index)
-                .unwrap()
-                .get_mut(column_index)
-                .unwrap();
-            if position.tree_size >= visible_height {
-                position.visible = true;
-                visible_height = position.tree_size + 1;
-            }
-
-            if visible_height == 10 {
-                break;
-            }
-        }
-    }
-
-    // Horizontal, right to left,
-
-    // Vertical, top to bottom
-
-    // Vertical, bottom to top
-
-    input
-        .iter()
-        .map(|x| x.iter().filter(|y| y.visible).count())
-        .sum()
+    visible.len()
 }
 
-fn part_2(input: &Vec<Vec<Position>>) -> i32 {
-    todo!()
+fn part_2(input: &Grid<i32>) -> usize {
+    let mut highest_view_score = 0;
+    'main_loop: for (current_coord, current_tree) in input.indexed_iter() {
+        let mut current_score = 1;
+        for view in CARDINALS.map(|direction| input.view_from(&current_coord, direction)) {
+            let view_score = if let Some(position) = view
+                .iter()
+                .position(|neighbour| neighbour.value >= current_tree)
+            {
+                position + 1
+            } else {
+                view.len()
+            };
+
+            if view_score == 0 {
+                continue 'main_loop;
+            }
+            current_score *= view_score;
+        }
+
+        highest_view_score = highest_view_score.max(current_score);
+    }
+
+    highest_view_score
 }
 
-fn parse_input(input: &str) -> Vec<Vec<Position>> {
-    input
-        .lines()
-        .map(|x| {
-            x.chars()
-                .map(|y| Position {
-                    tree_size: y.to_digit(10).unwrap(),
-                    visible: false,
-                })
-                .collect()
-        })
-        .collect()
-}
+fn parse_input(input: &str) -> Grid<i32> {
+    let mut grid = Grid::new();
+    for line in input.lines() {
+        let new_row = line
+            .chars()
+            .map(|y| y.to_digit(10).unwrap() as i32)
+            .collect();
 
-struct Position {
-    tree_size: u32,
-    visible: bool,
+        grid.push_row(new_row);
+    }
+
+    grid
 }
 
 #[cfg(test)]
@@ -130,6 +125,6 @@ mod tests {
     #[test]
     fn part_2_test() {
         let input = parse_input(TESTINPUT);
-        assert_eq!(part_2(&input), 5);
+        assert_eq!(part_2(&input), 8);
     }
 }
