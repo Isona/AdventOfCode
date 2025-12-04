@@ -1,4 +1,4 @@
-use aoc_lib::Grid;
+use aoc_lib::{Coordinate, Grid};
 use std::collections::VecDeque;
 
 const INPUT: &str = include_str!("input.txt");
@@ -39,10 +39,17 @@ fn part_2(input: &mut Grid<CellType>) -> u64 {
     let mut reachable_count = 0;
     let mut found_more_to_remove = true;
     let mut current_reachable = VecDeque::new();
+    let mut remaining_rolls: VecDeque<Coordinate> = input
+        .indexed_iter()
+        .filter(|x| x.1 == &CellType::Paper)
+        .map(|x| x.0)
+        .collect();
+
+    let mut next_remaining = VecDeque::new();
 
     while found_more_to_remove {
         found_more_to_remove = false;
-        for (current_coord, _) in input.indexed_iter().filter(|x| x.1 == &CellType::Paper) {
+        for current_coord in remaining_rolls.drain(0..remaining_rolls.len()) {
             if input
                 .get_all_neighbours(current_coord)
                 .filter(|x| x.value == &CellType::Paper)
@@ -52,12 +59,16 @@ fn part_2(input: &mut Grid<CellType>) -> u64 {
                 current_reachable.push_back(current_coord);
                 reachable_count += 1;
                 found_more_to_remove = true;
+            } else {
+                next_remaining.push_back(current_coord);
             }
         }
 
         for removable_paper in current_reachable.drain(0..current_reachable.len()) {
             input.set(removable_paper, CellType::Empty);
         }
+
+        std::mem::swap(&mut remaining_rolls, &mut next_remaining);
     }
 
     reachable_count
