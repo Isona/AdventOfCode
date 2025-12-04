@@ -75,20 +75,21 @@ fn part_2(input: &Grid<i32>) -> usize {
     let mut highest_view_score = 0;
     'main_loop: for (current_coord, current_tree) in input.indexed_iter() {
         let mut current_score = 1;
-        for view in CARDINALS.map(|direction| input.view_from(&current_coord, direction)) {
-            let view_score = if let Some(position) = view
-                .iter()
-                .position(|neighbour| neighbour.value >= current_tree)
-            {
-                position + 1
-            } else {
-                view.len()
-            };
+        for view_direction in CARDINALS {
+            let mut view_coord = current_coord;
+            let mut view_distance = 0;
+            while let Some(neighbour) = input.get_neighbour(view_coord, view_direction) {
+                view_coord = neighbour.location;
+                view_distance += 1;
+                if neighbour.value >= current_tree {
+                    break;
+                }
+            }
 
-            if view_score == 0 {
+            if view_distance == 0 {
                 continue 'main_loop;
             }
-            current_score *= view_score;
+            current_score *= view_distance;
         }
 
         highest_view_score = highest_view_score.max(current_score);
