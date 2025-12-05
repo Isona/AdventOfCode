@@ -1,3 +1,5 @@
+use std::{collections::HashSet, ops::RangeInclusive};
+
 const INPUT: &str = include_str!("input.txt");
 
 fn main() {
@@ -21,7 +23,7 @@ fn part_1(input: &[IDRange]) -> u64 {
 }
 
 fn part_2(input: &[IDRange]) -> u64 {
-    todo!();
+    input.iter().map(|x| x.invalid_sum_part_2()).sum()
 }
 
 fn parse_input(input: &str) -> Vec<IDRange> {
@@ -61,20 +63,67 @@ impl IDRange {
     }
 
     fn invalid_sum_part_2(&self) -> u64 {
-        let mut invalid_sum = 0;
+        // Use a hashset rather than just summing straight away because of possible duplicates
+        // Example: 1 and 11 would both generate 1111 for 4 digits
+        let mut invalids_in_range = HashSet::new();
 
-        // If the start and end ranges have the same digit count
-        if self.start.ilog10() == self.end.ilog10() {
+        // Convert for example 95-115 into 95..=99, 100..=115
+        let internal_ranges = self.get_internal_ranges();
+
+        for internal_range in internal_ranges {
+            // Get the digit count and loop over its factors - these are the number of digits that form possible patterns
+            let digit_count = get_digit_count(*internal_range.start());
+            // For each possible pattern length, get the first and last pattern
+            for pattern_length in get_factors(get_digit_count(*internal_range.start())) {
+                let pattern_start =
+                    get_first_n_digits(*internal_range.start(), (pattern_length).into());
+                let pattern_end =
+                    get_first_n_digits(*internal_range.end(), (pattern_length).into());
+
+                // Loop over the possible patterns, duplicate them and add them to the hashset if they're in the current range
+                for pattern_index in pattern_start..=pattern_end {
+                    let invalid = get_invalid(pattern_index, (digit_count / pattern_length).into());
+                    if internal_range.contains(&invalid) {
+                        invalids_in_range.insert(invalid);
+                    }
+                }
+            }
         }
-        // If they're different
-        else {
+        invalids_in_range.iter().sum()
+    }
+
+    fn get_internal_ranges(&self) -> Vec<RangeInclusive<u64>> {
+        let mut current_start = self.start;
+        let current_end = self.end;
+        let mut ranges = Vec::new();
+
+        while get_digit_count(current_start) != get_digit_count(current_end) {
+            let next_power_of_10 = get_next_power_of_10(current_start);
+            ranges.push(current_start..=next_power_of_10 - 1);
+            current_start = next_power_of_10;
         }
-        invalid_sum
+
+        ranges.push(current_start..=current_end);
+
+        ranges
     }
 }
 
 fn get_invalid_by_index(input: u64) -> u64 {
     input * 10_u64.pow(input.ilog10() + 1) + input
+}
+
+fn get_invalid(input: u64, repeats: u64) -> u64 {
+    let next_power_of_10 = get_next_power_of_10(input);
+    (0..repeats).fold(0, |acc, _| acc * next_power_of_10 + input)
+}
+
+fn get_next_power_of_10(input: u64) -> u64 {
+    10_u64.pow(get_digit_count(input))
+}
+
+fn get_first_n_digits(input: u64, digit_count: u64) -> u64 {
+    input / 10u64.pow(get_digit_count(input) - digit_count as u32)
 }
 
 fn get_invalid_index(input: u64) -> u64 {
@@ -86,8 +135,12 @@ fn get_invalid_index(input: u64) -> u64 {
     }
 }
 
-fn get_factors(input: u64) -> impl Iterator<Item = u64> {
-    (1u64..=input / 2).filter(move |i| input.is_multiple_of(*i))
+fn get_digit_count(input: u64) -> u32 {
+    input.ilog10() + 1
+}
+
+fn get_factors(input: u32) -> impl Iterator<Item = u32> {
+    (1..=input / 2).filter(move |i| input.is_multiple_of(*i))
 }
 
 #[cfg(test)]
@@ -110,12 +163,41 @@ mod tests {
 
     #[test]
     fn test_factors() {
-        assert_eq!(get_factors(10).collect::<Vec<u64>>(), vec![1, 2, 5]);
-        assert_eq!(get_factors(7).collect::<Vec<u64>>(), vec![1]);
-        assert_eq!(get_factors(9).collect::<Vec<u64>>(), vec![1, 3]);
+        assert_eq!(get_factors(10).collect::<Vec<u32>>(), vec![1, 2, 5]);
+        assert_eq!(get_factors(7).collect::<Vec<u32>>(), vec![1]);
+        assert_eq!(get_factors(9).collect::<Vec<u32>>(), vec![1, 3]);
         assert_eq!(
-            get_factors(24).collect::<Vec<u64>>(),
+            get_factors(24).collect::<Vec<u32>>(),
             vec![1, 2, 3, 4, 6, 8, 12]
         );
+    }
+
+    #[test]
+    fn test_digit_count() {
+        assert_eq!(get_digit_count(96952600), 8);
+        assert_eq!(get_digit_count(1235), 4);
+        assert_eq!(get_digit_count(12356), 5);
+        assert_eq!(get_digit_count(9), 1);
+    }
+
+    #[test]
+    fn test_next_power_of_10() {
+        assert_eq!(get_next_power_of_10(96952600), 100000000);
+        assert_eq!(get_next_power_of_10(15), 100);
+    }
+
+    #[test]
+    fn test_get_invalid() {
+        assert_eq!(get_invalid(10, 5), 1010101010);
+        assert_eq!(get_invalid(1, 7), 1111111);
+        assert_eq!(get_invalid(1234, 2), 12341234);
+    }
+
+    #[test]
+    fn test_get_n_digits() {
+        assert_eq!(get_first_n_digits(900, 1), 9);
+        assert_eq!(get_first_n_digits(900, 2), 90);
+        assert_eq!(get_first_n_digits(900, 3), 900);
+        assert_eq!(get_first_n_digits(1188511880, 5), 11885);
     }
 }
