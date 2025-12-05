@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 use aoc_lib::{Coordinate, Grid};
 
 const INPUT: &str = include_str!("input.txt");
@@ -34,7 +32,7 @@ fn part_1(input: &Grid<u32>) -> u32 {
     sum
 }
 
-fn part_2(grid: &Grid<u32>) -> usize {
+fn part_2(grid: &Grid<u32>) -> u64 {
     let mut visited_grid = Grid::new();
     let grid_width = grid.get_width();
     for _ in 0..grid.get_height() {
@@ -44,12 +42,9 @@ fn part_2(grid: &Grid<u32>) -> usize {
     let mut basin_sizes = Vec::new();
     for (current_coord, _) in grid.indexed_iter().filter(|x| x.1 != &9) {
         if !visited_grid.get(current_coord) {
-            let mut current_basin = HashSet::new();
-            dfs(grid, current_coord, &mut current_basin);
-            basin_sizes.push(current_basin.len());
-            for visited_coord in current_basin {
-                visited_grid.set(visited_coord, true);
-            }
+            let mut visited_count = 0;
+            dfs(grid, current_coord, &mut visited_grid, &mut visited_count);
+            basin_sizes.push(visited_count);
         }
     }
 
@@ -57,17 +52,23 @@ fn part_2(grid: &Grid<u32>) -> usize {
     basin_sizes.iter().rev().take(3).product()
 }
 
-fn dfs(grid: &Grid<u32>, current_coord: Coordinate, visited: &mut HashSet<Coordinate>) {
-    // Add this node to visited, keeping track of the shortest path
-    visited.insert(current_coord);
+fn dfs(
+    grid: &Grid<u32>,
+    current_coord: Coordinate,
+    visited: &mut Grid<bool>,
+    basin_size: &mut u64,
+) {
+    // Set this node to visited, keeping track of the basin size
+    visited.set(current_coord, true);
+    *basin_size += 1;
 
     // Loop over all unvisited neighbours that aren't 9 and recurse on them
     for neighbour in grid
         .get_cardinal_neighbours(current_coord)
         .filter(|neighbour| neighbour.value != &9)
     {
-        if !visited.contains(&neighbour.location) {
-            dfs(grid, neighbour.location, visited);
+        if !visited.get(neighbour.location) {
+            dfs(grid, neighbour.location, visited, basin_size);
         }
     }
 }
