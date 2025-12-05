@@ -54,8 +54,8 @@ impl SevenSegment {
                 3 => digits[7] = input_val,
                 // Four
                 4 => digits[4] = input_val,
-                // Zero
-                7 => digits[0] = input_val,
+                // Eight
+                7 => digits[8] = input_val,
                 _ => {}
             }
         }
@@ -76,16 +76,17 @@ impl SevenSegment {
         }
 
         for input_val in self.input.iter().filter(|x| x.len() == 5) {
-            if input_val == digits[3] {
-                continue;
-            }
-            if input_val.is_subset(digits[9]) {
+            // Three
+            if input_val.is_superset(digits[1]) {
+                digits[3] = input_val;
+            } else if input_val.is_subset(digits[9]) {
                 digits[5] = input_val;
             } else {
                 digits[2] = input_val;
             }
         }
 
+        //        println!("{digits:?}");
         let mut output_total = 0;
         for output_val in &self.output {
             let (index, _) = digits
@@ -140,6 +141,6 @@ mod tests {
     #[test]
     fn part_2_test() {
         let input = parse_input(TESTINPUT);
-        assert_eq!(part_2(&input), 5);
+        assert_eq!(part_2(&input), 61229);
     }
 }
