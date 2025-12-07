@@ -55,7 +55,6 @@ fn part_2(input: &mut Grid<Pipe>, loop_coords: HashSet<Coordinate>) -> u64 {
         let mut last_corner = Pipe::Empty;
         for east_pipe in input
             .view_from(&coord, Direction::East)
-            .iter()
             .filter(|x| loop_coords.contains(&x.location))
         {
             let east_pipe_type = input.get(east_pipe.location);

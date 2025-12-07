@@ -18,10 +18,12 @@ impl<T> Grid<T> {
         Self::default()
     }
 
+    #[inline]
     pub fn get_width(&self) -> usize {
         self.row_len
     }
 
+    #[inline]
     pub fn get_height(&self) -> usize {
         self.row_count
     }
@@ -36,14 +38,17 @@ impl<T> Grid<T> {
         self.data.extend(new_row);
     }
 
+    #[inline]
     pub fn get(&self, coord: Coordinate) -> &T {
         &self.data[coord.y * self.row_len + coord.x]
     }
 
+    #[inline]
     pub fn set(&mut self, coord: Coordinate, value: T) {
         self.data[coord.y * self.row_len + coord.x] = value;
     }
 
+    #[inline]
     pub fn get_all_neighbours(
         &self,
         location: Coordinate,
@@ -51,6 +56,7 @@ impl<T> Grid<T> {
         self.get_neighbours(location, Direction::get_all())
     }
 
+    #[inline]
     pub fn get_cardinal_neighbours(
         &self,
         location: Coordinate,
@@ -58,6 +64,7 @@ impl<T> Grid<T> {
         self.get_neighbours(location, Direction::get_cardinals())
     }
 
+    #[inline]
     pub fn get_neighbours<'this>(
         &'this self,
         location: Coordinate,
@@ -117,10 +124,12 @@ impl<T> Grid<T> {
         })
     }
 
+    #[inline]
     pub fn is_valid_coord(&self, coord: Coordinate) -> bool {
         coord.x < self.row_len && coord.y < self.row_count
     }
 
+    #[inline]
     pub fn indexed_iter(&self) -> impl Iterator<Item = (Coordinate, &T)> + Clone {
         self.data.iter().enumerate().map(move |(idx, i)| {
             let position = self.index_to_coord(idx);
@@ -128,6 +137,7 @@ impl<T> Grid<T> {
         })
     }
 
+    #[inline]
     pub fn find_item(&self, input: &T) -> Option<Coordinate>
     where
         T: PartialEq,
@@ -138,6 +148,7 @@ impl<T> Grid<T> {
             .map(|index| self.index_to_coord(index))
     }
 
+    #[inline]
     pub fn find_all<'self_>(
         &'self_ self,
         input: &'self_ T,
@@ -150,6 +161,7 @@ impl<T> Grid<T> {
             .map(|x| x.0)
     }
 
+    #[inline]
     pub fn find_all_by<'self_, F>(
         &'self_ self,
         mut function: F,
@@ -163,6 +175,7 @@ impl<T> Grid<T> {
             .map(|x| x.0)
     }
 
+    #[inline]
     fn index_to_coord(&self, index: usize) -> Coordinate {
         Coordinate {
             x: index % self.row_len,
@@ -170,6 +183,7 @@ impl<T> Grid<T> {
         }
     }
 
+    #[inline]
     pub fn are_locations_equal(&self, first: Coordinate, second: Coordinate) -> bool
     where
         T: PartialEq,
@@ -177,6 +191,7 @@ impl<T> Grid<T> {
         self.get(first) == self.get(second)
     }
 
+    #[inline]
     pub fn matches_neighbour(&self, location: Coordinate, direction: Direction) -> bool
     where
         T: PartialEq,
@@ -188,31 +203,30 @@ impl<T> Grid<T> {
         false
     }
 
+    #[inline]
     pub fn get_row(&self, row_index: usize) -> impl Iterator<Item = Coordinate> + '_ {
         //The row starts at row_index*row_length and ends at row_index+1*row_length
         (row_index * self.row_len..(row_index + 1) * self.row_len).map(|x| self.index_to_coord(x))
     }
 
+    #[inline]
     pub fn get_column(&self, column_index: usize) -> impl Iterator<Item = Coordinate> + '_ {
         (column_index..self.data.len())
             .step_by(self.row_len)
             .map(|x| self.index_to_coord(x))
     }
 
+    #[inline]
     pub fn view_from<'a>(
         &'a self,
         coord: &Coordinate,
         direction: Direction,
-    ) -> Vec<Neighbour<'a, T>> {
-        let mut current_coord = *coord;
-        let mut view = Vec::new();
-
-        while let Some(neighbour) = self.get_neighbour(current_coord, direction) {
-            current_coord = neighbour.location;
-            view.push(neighbour);
+    ) -> ViewFromIterator<'a, T> {
+        ViewFromIterator {
+            current_coord: *coord,
+            grid: &self,
+            direction,
         }
-
-        view
     }
 
     pub fn create_visited_list(&self) -> Visited {
@@ -265,6 +279,24 @@ pub struct Neighbour<'a, T> {
     pub value: &'a T,
     pub location: Coordinate,
     pub direction: Direction,
+}
+
+pub struct ViewFromIterator<'grid, T> {
+    current_coord: Coordinate,
+    grid: &'grid Grid<T>,
+    direction: Direction,
+}
+
+impl<'a, T> Iterator for ViewFromIterator<'a, T> {
+    type Item = Neighbour<'a, T>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let neighbour = self
+            .grid
+            .get_neighbour(self.current_coord, self.direction)?;
+        self.current_coord = neighbour.location;
+        Some(neighbour)
+    }
 }
 
 #[cfg(test)]
@@ -349,7 +381,9 @@ mod grid_tests {
     #[test]
     fn get_view_test_north() {
         let grid = get_test_grid();
-        let view = grid.view_from(&Coordinate::new(2, 2), Direction::North);
+        let view: Vec<_> = grid
+            .view_from(&Coordinate::new(2, 2), Direction::North)
+            .collect();
         assert_eq!(view.len(), 2);
         assert_eq!(view[0].value, &7);
         assert_eq!(view[1].value, &3);
@@ -358,7 +392,9 @@ mod grid_tests {
     #[test]
     fn get_view_test_southeast() {
         let grid = get_test_grid();
-        let view = grid.view_from(&Coordinate::new(1, 0), Direction::SouthEast);
+        let view: Vec<_> = grid
+            .view_from(&Coordinate::new(1, 0), Direction::SouthEast)
+            .collect();
         assert_eq!(view.len(), 2);
         assert_eq!(view[0].value, &7);
         assert_eq!(view[1].value, &12);
