@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashSet};
 
 use itertools::Itertools;
 
@@ -13,12 +13,6 @@ fn main() {
     let time_taken = start.elapsed().as_secs_f32() * 1000.0;
     println!("Part 1: {part_1_answer} in {time_taken:.3} ms");
     println!("Part 2: {part_2_answer}");
-
-    // let start = std::time::Instant::now();
-    // let part_2_answer = part_2(&input);
-
-    // let time_taken = start.elapsed().as_secs_f32() * 1000.0;
-    // println!("Part 2: {part_2_answer} in {time_taken:.3} ms");
 }
 
 fn part_1(input: &[JunctionBox], connect_count: usize) -> (u64, u64) {
@@ -89,10 +83,6 @@ fn part_1(input: &[JunctionBox], connect_count: usize) -> (u64, u64) {
     }
 
     (part_1, part_2)
-}
-
-fn part_2(input: &[JunctionBox]) -> u64 {
-    todo!();
 }
 
 fn parse_input(input: &str) -> Vec<JunctionBox> {
