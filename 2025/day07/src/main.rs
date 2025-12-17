@@ -1,4 +1,4 @@
-use std::collections::{HashSet, VecDeque};
+use std::collections::HashMap;
 
 use aoc_lib::{Direction, Grid};
 
@@ -8,56 +8,80 @@ fn main() {
     let input = parse_input(INPUT);
 
     let start = std::time::Instant::now();
-    let part_1_answer = part_1(&input);
+    let (part_1_answer, part_2_answer) = part_1_and_2(&input);
 
     let time_taken = start.elapsed().as_secs_f32() * 1000.0;
     println!("Part 1: {part_1_answer} in {time_taken:.3} ms");
-
-    let start = std::time::Instant::now();
-    let part_2_answer = part_2(&input);
-
-    let time_taken = start.elapsed().as_secs_f32() * 1000.0;
-    println!("Part 2: {part_2_answer} in {time_taken:.3} ms");
+    println!("Part 2: {part_2_answer} - calculated at the same time");
 }
 
-fn part_1(grid: &Grid<CellType>) -> usize {
-    let mut hit_splitters = HashSet::new();
+fn part_1_and_2(grid: &Grid<CellType>) -> (usize, u64) {
+    let mut total_paths = 0;
+
+    // Add the first splitter hit from the start point to hit_splitters
+    //
+    let mut hit_splitters = HashMap::new();
     let start_point = grid.find_item(&CellType::Start).unwrap();
+    let first_splitter = grid
+        .view_from(&start_point, Direction::South)
+        .find(|x| x.value == &CellType::Splitter)
+        .unwrap();
+    hit_splitters.insert(first_splitter.location, 1);
 
-    let mut laser_starts = VecDeque::new();
-    let mut scanned = HashSet::new();
-    laser_starts.push_back(start_point);
-    let mut current_point;
-
-    while !laser_starts.is_empty() {
-        current_point = laser_starts.pop_front().unwrap();
-
-        if let Some(south_splitter) = grid
-            .view_from(&current_point, Direction::South)
-            .find(|x| x.value == &CellType::Splitter)
+    // Just iterate over each even row looking for splitters
+    // Store them in hit_splitters with the number of paths that could reach them
+    for row_number in (0..grid.get_height()).step_by(2) {
+        // Get the splitters in the current row and iterate over their coordinates
+        for current_splitter in grid
+            .get_row(row_number)
+            .filter(|coord| grid.get(*coord) == &CellType::Splitter)
         {
-            hit_splitters.insert(south_splitter.location);
+            // Get the current splitter value, copy it using shadowing to avoid borrowing hit_splitters
+            let Some(current_splitter_value) = hit_splitters.get(&current_splitter) else {
+                continue;
+            };
+            let current_splitter_value = *current_splitter_value;
 
-            if let Some(west_split) = grid.get_neighbour(south_splitter.location, Direction::West)
-                && !scanned.contains(&west_split.location)
-            {
-                laser_starts.push_back(west_split.location);
-                scanned.insert(west_split.location);
+            // If there is a west neighbour then we have a laser!
+            if let Some(west_laser) = grid.get_neighbour(current_splitter, Direction::West) {
+                // Try to find the splitter below, if we find it, then add it to hit_splitters
+                // or add the current_value to that entry in hit_splitters
+                if let Some(sw_splitter) = grid
+                    .view_from(&west_laser.location, Direction::South)
+                    .find(|x| x.value == &CellType::Splitter)
+                {
+                    hit_splitters
+                        .entry(sw_splitter.location)
+                        .and_modify(|x| *x += current_splitter_value)
+                        .or_insert(current_splitter_value);
+                // If we couldn't find a splitter below, then this is the end of a path, add it to total_paths
+                } else {
+                    total_paths += current_splitter_value;
+                }
             }
-            if let Some(east_split) = grid.get_neighbour(south_splitter.location, Direction::East)
-                && !scanned.contains(&east_split.location)
-            {
-                laser_starts.push_back(east_split.location);
-                scanned.insert(east_split.location);
+
+            // If there is an east neighbour then we have a laser!
+            if let Some(east_laser) = grid.get_neighbour(current_splitter, Direction::East) {
+                // Try to find the splitter below, if we find it, then add it to hit_splitters
+                // or add the current_value to that entry in hit_splitters
+                if let Some(sw_splitter) = grid
+                    .view_from(&east_laser.location, Direction::South)
+                    .find(|x| x.value == &CellType::Splitter)
+                {
+                    hit_splitters
+                        .entry(sw_splitter.location)
+                        .and_modify(|x| *x += current_splitter_value)
+                        .or_insert(current_splitter_value);
+                // If we couldn't find a splitter below, then this is the end of a path, add it to total_paths
+                } else {
+                    total_paths += current_splitter_value;
+                }
             }
         }
     }
 
-    hit_splitters.len()
-}
-
-fn part_2(input: &Grid<CellType>) -> u64 {
-    todo!();
+    // The part 1 answer is the length of hit_splitters
+    (hit_splitters.len(), total_paths)
 }
 
 fn parse_input(input: &str) -> Grid<CellType> {
@@ -96,12 +120,12 @@ mod tests {
     #[test]
     fn part_1_test() {
         let input = parse_input(TESTINPUT);
-        assert_eq!(part_1(&input), 21);
+        assert_eq!(part_1_and_2(&input).0, 21);
     }
 
     #[test]
     fn part_2_test() {
         let input = parse_input(TESTINPUT);
-        assert_eq!(part_2(&input), 5);
+        assert_eq!(part_1_and_2(&input).1, 40);
     }
 }
