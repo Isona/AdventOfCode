@@ -29,8 +29,36 @@ fn part_1(input: &[Coordinate]) -> usize {
     max_square_size
 }
 
-fn part_2(input: &[Coordinate]) -> u64 {
-    todo!();
+fn part_2(input: &[Coordinate]) -> usize {
+    let mut max_square_size = 0;
+
+    for (first, second) in input.iter().tuple_combinations() {
+        println!("{first}, {second}");
+        if !input
+            .iter()
+            .any(|other| square_contains(first, second, other))
+        {
+            println!("No other corners in here!");
+            let square_size = (first.x.abs_diff(second.x) + 1) * (first.y.abs_diff(second.y) + 1);
+            max_square_size = max_square_size.max(square_size);
+        }
+    }
+
+    max_square_size
+}
+
+fn square_contains(corner_1: &Coordinate, corner_2: &Coordinate, other: &Coordinate) -> bool {
+    if other == corner_1 || other == corner_2 {
+        return false;
+    }
+
+    let contains_x = corner_1.x.min(corner_2.x) <= other.x && corner_1.x.max(corner_2.x) >= other.x;
+    let contains_y = corner_1.y.min(corner_2.y) <= other.y && corner_1.y.max(corner_2.y) >= other.y;
+
+    if contains_x && contains_y {
+        println!("{corner_1} {corner_2} contains {other}");
+    }
+    contains_x && contains_y
 }
 
 fn parse_input(input: &str) -> Vec<Coordinate> {
